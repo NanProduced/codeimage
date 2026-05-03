@@ -70,6 +70,15 @@ export const EditorStyleForm: ParentComponent = () => {
 
   const highlightedLines = createMemo(() => editor()?.highlightedLines ?? []);
 
+  const codeLines = createMemo(() => {
+    const code = editor()?.code ?? '';
+    if (!code) return 1;
+    return code.split('\n').length;
+  });
+
+  const lineNumberStart = createMemo(() => editor()?.lineNumberStart ?? 1);
+  const maxDisplayLine = createMemo(() => lineNumberStart() + codeLines() - 1);
+
   const colorOptions = createSelectOptions(
     DEFAULT_HIGHLIGHT_COLORS.map((color, index) => ({
       label: `Color ${index + 1}`,
@@ -83,7 +92,25 @@ export const EditorStyleForm: ParentComponent = () => {
 
   const handleAddHighlight = () => {
     const defaultColor = DEFAULT_HIGHLIGHT_COLORS[0];
-    addHighlight(1, 1, defaultColor);
+    const defaultFrom = lineNumberStart();
+    const defaultTo = Math.min(lineNumberStart(), maxDisplayLine());
+    addHighlight(defaultFrom, defaultTo, defaultColor);
+  };
+
+  const handleUpdateHighlightFrom = (highlight: LineHighlight, newFrom: number | null | undefined) => {
+    const from = newFrom ?? lineNumberStart();
+    const clampedFrom = Math.max(lineNumberStart(), Math.min(from, maxDisplayLine()));
+    const clampedTo = Math.max(clampedFrom, Math.min(highlight.to, maxDisplayLine()));
+
+    updateHighlight(highlight.id, {from: clampedFrom, to: clampedTo});
+  };
+
+  const handleUpdateHighlightTo = (highlight: LineHighlight, newTo: number | null | undefined) => {
+    const to = newTo ?? maxDisplayLine();
+    const clampedTo = Math.max(lineNumberStart(), Math.min(to, maxDisplayLine()));
+    const clampedFrom = Math.min(highlight.from, clampedTo);
+
+    updateHighlight(highlight.id, {from: clampedFrom, to: clampedTo});
   };
 
   const languagesOptions = createSelectOptions(
@@ -305,12 +332,12 @@ export const EditorStyleForm: ParentComponent = () => {
                       >
                         <NumberField
                           size={'xs'}
-                          min={1}
-                          max={999}
+                          min={lineNumberStart()}
+                          max={maxDisplayLine()}
                           id={`highlightFrom-${highlight.id}`}
                           value={highlight.from}
                           onChange={value =>
-                            updateHighlight(highlight.id, {from: value ?? 1})
+                            handleUpdateHighlightFrom(highlight, value)
                           }
                         />
                       </SuspenseEditorItem>
@@ -327,12 +354,12 @@ export const EditorStyleForm: ParentComponent = () => {
                       >
                         <NumberField
                           size={'xs'}
-                          min={1}
-                          max={999}
+                          min={lineNumberStart()}
+                          max={maxDisplayLine()}
                           id={`highlightTo-${highlight.id}`}
                           value={highlight.to}
                           onChange={value =>
-                            updateHighlight(highlight.id, {to: value ?? 1})
+                            handleUpdateHighlightTo(highlight, value)
                           }
                         />
                       </SuspenseEditorItem>
@@ -410,7 +437,7 @@ export const EditorStyleForm: ParentComponent = () => {
                     onClick={clearHighlights}
                     style={{'margin-left': '8px'}}
                   >
-                    Clear All
+                    {t('frame.clearAllHighlights')}
                   </Button>
                 </Show>
               </TwoColumnPanelRow>

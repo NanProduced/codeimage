@@ -2,6 +2,16 @@ import {Type} from '@sinclair/typebox';
 import {enumLiteral} from '../../../common/typebox/enum.js';
 import {Nullable} from '../../../common/typebox/nullable.js';
 
+export const LineHighlightSchema = Type.Object(
+  {
+    id: Type.String(),
+    from: Type.Integer({minimum: 1}),
+    to: Type.Integer({minimum: 1}),
+    color: Type.String(),
+  },
+  {title: 'LineHighlight'},
+);
+
 export const BaseProjectResponseSchema = Type.Object(
   {
     id: Type.String({format: 'uuid'}),
@@ -23,6 +33,7 @@ export const BaseSnippetEditorTabsSchema = Type.Array(
     languageId: Type.String(),
     tabName: Type.String(),
     lineNumberStart: Type.Integer({minimum: 1, maximum: 999_999}),
+    highlightedLines: Type.Array(LineHighlightSchema),
   }),
 );
 

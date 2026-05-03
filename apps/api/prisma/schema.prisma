@@ -81,7 +81,8 @@ model SnippetEditorTab {
   languageId String
   tabName    String  @default("")
 
-  lineNumberStart Int @default(1)
+  lineNumberStart Int  @default(1)
+  highlightedLines Json @default("[]")
 
   @@unique([id, projectId])
 }

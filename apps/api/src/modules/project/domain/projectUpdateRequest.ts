@@ -14,6 +14,7 @@ interface EditorUpdateRequest {
   languageId: NonNullable<SnippetEditorTab['languageId']>;
   tabName: NonNullable<SnippetEditorTab['tabName']>;
   lineNumberStart: NonNullable<SnippetEditorTab['lineNumberStart']>;
+  highlightedLines: NonNullable<SnippetEditorTab['highlightedLines']>;
 }
 
 interface EditorTabResponse {
@@ -22,6 +23,7 @@ interface EditorTabResponse {
   languageId: NonNullable<SnippetEditorTab['languageId']>;
   tabName: NonNullable<SnippetEditorTab['tabName']>;
   lineNumberStart: NonNullable<SnippetEditorTab['lineNumberStart']>;
+  highlightedLines: NonNullable<SnippetEditorTab['highlightedLines']>;
 }
 
 export interface ProjectUpdateRequest {

@@ -176,7 +176,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     ref: setLeftRef,
     createExtension: createLeftExtension,
   } = createCodeMirror({
-    value: () => diffEditorState().leftCode,
+    value: diffEditorState().leftCode,
     onValueChange: value => {
       setState('diffEditor', 'leftCode', value);
     },
@@ -187,7 +187,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     ref: setRightRef,
     createExtension: createRightExtension,
   } = createCodeMirror({
-    value: () => diffEditorState().rightCode,
+    value: diffEditorState().rightCode,
     onValueChange: value => {
       setState('diffEditor', 'rightCode', value);
     },
@@ -202,7 +202,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
   });
 
   function setupEditorExtensions(
-    createExtension: (ext: () => Extension) => void,
+    createExtension: (ext: Extension | (() => Extension)) => (ext: Extension) => void,
     editorView: Accessor<EditorView | undefined>,
   ) {
     createEditorReadonly(editorView, () => props.readOnly);
@@ -225,6 +225,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
       if (extraLanguage.overrideParent) {
         return extraLanguage.extension ?? [];
       }
+      return [];
     });
 
     createExtension(() => {
@@ -361,7 +362,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
         <button
           class={styles.parseButton}
           onClick={() => setShowDiffInput(v => !v)}
-          style={{marginTop: 0}}
+          style={{'margin-top': '0'}}
         >
           {showDiffInput() ? 'Hide' : 'Paste Diff'}
         </button>

@@ -1,7 +1,8 @@
 import {useI18n} from '@codeimage/locale';
 import {getTerminalState} from '@codeimage/store/editor/terminal';
+import {RangeField} from '@codeimage/ui';
 import {VersionStore} from '@codeimage/store/version/version.store';
-import {createSelectOptions, Select} from '@codeui/kit';
+import {createSelectOptions, Select, TextField} from '@codeui/kit';
 import {shadowsLabel} from '@core/configuration/shadow';
 import {getUmami} from '@core/constants/umami';
 import {SegmentedField} from '@ui/SegmentedField/SegmentedField';
@@ -10,6 +11,7 @@ import type {ParentComponent} from 'solid-js';
 import {createMemo, Show} from 'solid-js';
 import {provideState} from 'statebuilder';
 import type {AppLocaleEntries} from '../../i18n';
+import {CustomColorPicker} from './controls/ColorPicker/CustomColorPicker';
 import {TerminalControlField} from './controls/TerminalControlField/TerminalControlField';
 import {PanelHeader} from './PanelHeader';
 import {FullWidthPanelRow, PanelRow, TwoColumnPanelRow} from './PanelRow';
@@ -39,6 +41,31 @@ export const WindowStyleForm: ParentComponent = () => {
       valueKey: 'value',
     },
   );
+
+  const positionOptions = createMemo(() => [
+    {label: t('frame.userWatermarkPositionLeft'), value: 'left'},
+    {label: t('frame.userWatermarkPositionCenter'), value: 'center'},
+    {label: t('frame.userWatermarkPositionRight'), value: 'right'},
+  ]);
+
+  const positionSelect = createSelectOptions(positionOptions(), {
+    key: 'label',
+    valueKey: 'value',
+  });
+
+  const fontSizeOptions = createMemo(() => [
+    {label: '10', value: '10'},
+    {label: '12', value: '12'},
+    {label: '14', value: '14'},
+    {label: '16', value: '16'},
+    {label: '18', value: '18'},
+    {label: '20', value: '20'},
+  ]);
+
+  const fontSizeSelect = createSelectOptions(fontSizeOptions(), {
+    key: 'label',
+    valueKey: 'value',
+  });
 
   return (
     <>
@@ -142,6 +169,162 @@ export const WindowStyleForm: ParentComponent = () => {
           </SuspenseEditorItem>
         </TwoColumnPanelRow>
       </PanelRow>
+
+      <PanelHeader label={t('frame.userWatermark')} />
+
+      <PanelRow for={'userWatermarkEnabled'} label={t('frame.userWatermarkEnabled')}>
+        <TwoColumnPanelRow>
+          <SuspenseEditorItem
+            fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+          >
+            <SegmentedField
+              size={'xs'}
+              adapt
+              value={terminal.state.userWatermark.enabled}
+              onChange={enabled =>
+                terminal.setUserWatermark({enabled})
+              }
+              items={[
+                {label: t('common.yes'), value: true},
+                {label: t('common.no'), value: false},
+              ]}
+            />
+          </SuspenseEditorItem>
+        </TwoColumnPanelRow>
+      </PanelRow>
+
+      <Show when={terminal.state.userWatermark.enabled}>
+        <PanelRow for={'userWatermarkText'} label={t('frame.userWatermarkText')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              <TextField
+                size={'xs'}
+                value={terminal.state.userWatermark.text}
+                onChange={text => terminal.setUserWatermark({text})}
+                placeholder={'e.g. @username or mywebsite.com'}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkAvatar'} label={t('frame.userWatermarkAvatar')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              <TextField
+                size={'xs'}
+                value={terminal.state.userWatermark.avatarUrl}
+                onChange={avatarUrl => terminal.setUserWatermark({avatarUrl})}
+                placeholder={'https://example.com/avatar.png'}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkPosition'} label={t('frame.userWatermarkPosition')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              {/*@ts-expect-error Fix @codeui/kit select types*/}
+              <Select
+                options={positionSelect.options()}
+                {...positionSelect.props()}
+                {...positionSelect.controlled(
+                  () => terminal.state.userWatermark.position,
+                  position => {
+                    terminal.setUserWatermark({
+                      position: position as 'left' | 'center' | 'right',
+                    });
+                  },
+                )}
+                aria-label={'Position'}
+                size={'xs'}
+                id={'userWatermarkPosition'}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkFontSize'} label={t('frame.userWatermarkFontSize')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              {/*@ts-expect-error Fix @codeui/kit select types*/}
+              <Select
+                options={fontSizeSelect.options()}
+                {...fontSizeSelect.props()}
+                {...fontSizeSelect.controlled(
+                  () => String(terminal.state.userWatermark.fontSize),
+                  fontSize => {
+                    terminal.setUserWatermark({
+                      fontSize: Number(fontSize),
+                    });
+                  },
+                )}
+                aria-label={'Font Size'}
+                size={'xs'}
+                id={'userWatermarkFontSize'}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkColor'} label={t('frame.userWatermarkColor')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              <CustomColorPicker
+                value={terminal.state.userWatermark.color || undefined}
+                onChange={color => terminal.setUserWatermark({color})}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkOpacity'} label={t('frame.userWatermarkOpacity')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              <RangeField
+                value={terminal.state.userWatermark.opacity}
+                min={10}
+                max={100}
+                step={5}
+                onChange={opacity => terminal.setUserWatermark({opacity})}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+
+        <PanelRow for={'userWatermarkExportOnly'} label={t('frame.userWatermarkExportOnly')}>
+          <TwoColumnPanelRow>
+            <SuspenseEditorItem
+              fallback={<SkeletonLine width={'100%'} height={'24px'} />}
+            >
+              <SegmentedField
+                size={'xs'}
+                adapt
+                value={terminal.state.userWatermark.showOnlyOnExport}
+                onChange={showOnlyOnExport =>
+                  terminal.setUserWatermark({showOnlyOnExport})
+                }
+                items={[
+                  {label: t('common.yes'), value: true},
+                  {label: t('common.no'), value: false},
+                ]}
+              />
+            </SuspenseEditorItem>
+          </TwoColumnPanelRow>
+        </PanelRow>
+      </Show>
+
       <PanelRow for={'frameSelectShadow'} label={t('frame.shadow')}>
         <TwoColumnPanelRow>
           <SuspenseEditorItem

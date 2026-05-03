@@ -110,3 +110,39 @@ export const watermark = style({
   opacity: 0.35,
   backgroundColor: 'inherit',
 });
+
+export const userWatermark = style({
+  position: 'absolute',
+  bottom: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  zIndex: 1,
+});
+
+export const userWatermarkLeft = style({
+  left: '16px',
+});
+
+export const userWatermarkCenter = style({
+  left: '50%',
+  transform: 'translateX(-50%)',
+});
+
+export const userWatermarkRight = style({
+  right: '16px',
+});
+
+export const userWatermarkAvatar = style({
+  width: '24px',
+  height: '24px',
+  borderRadius: '50%',
+  objectFit: 'cover',
+  flexShrink: 0,
+});
+
+export const userWatermarkText = style({
+  fontSize: '12px',
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+});

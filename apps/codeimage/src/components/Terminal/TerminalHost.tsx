@@ -9,7 +9,7 @@ import {createTabTheme} from './Tabs/createTabTheme';
 import * as styles from './terminal.css';
 import {getFrameState} from '@codeimage/store/editor/frame';
 
-export interface BaseTerminalProps extends Omit<TerminalState, 'type'> {
+export interface BaseTerminalProps extends Omit<TerminalState, 'type' | 'userWatermark'> {
   ref?: Ref<HTMLDivElement>;
   showTab: boolean;
   readonlyTab: boolean;
@@ -19,6 +19,7 @@ export interface BaseTerminalProps extends Omit<TerminalState, 'type'> {
   lite?: boolean;
   showOnlyActiveTab?: boolean;
   themeId: string;
+  userWatermark?: TerminalState['userWatermark'];
 }
 
 export interface TerminalHostProps extends BaseTerminalProps {

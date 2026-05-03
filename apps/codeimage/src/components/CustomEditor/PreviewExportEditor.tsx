@@ -1,7 +1,7 @@
 import {getRootEditorStore} from '@codeimage/store/editor';
 import {Annotation, Transaction} from '@codemirror/state';
 import type {EditorView} from '@codemirror/view';
-import {createEffect, createSignal, lazy, on} from 'solid-js';
+import {createEffect, createSignal, lazy, on, onCleanup} from 'solid-js';
 
 const syncAnnotation = Annotation.define<boolean>();
 
@@ -26,9 +26,14 @@ export default function PreviewExportEditor(props: PreviewExportEditorProps) {
   createEffect(
     on(editorView, editorView => {
       if (!editorView) return;
-      getRootEditorStore().canvasEditorEvents.listen(tr => {
-        setTimeout(() => syncDispatch(tr, editorView), 250);
-        setInterval(() => editorView.requestMeasure());
+
+      const unlisten = getRootEditorStore().canvasEditorEvents.listen(tr => {
+        syncDispatch(tr, editorView);
+        editorView.requestMeasure();
+      });
+
+      onCleanup(() => {
+        unlisten();
       });
     }),
   );

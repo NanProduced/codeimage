@@ -40,16 +40,27 @@ import {createTabIcon} from '../../hooks/use-tab-icon';
 function buildLineDecorations(
   highlights: LineHighlight[],
   view: EditorView,
+  lineNumberOffset: number,
 ): DecorationSet {
   const decorations: {from: number; to: number; value: Decoration}[] = [];
+  const docLines = view.state.doc.lines;
 
   for (const {from, to, color} of highlights) {
-    for (let lineNum = from; lineNum <= to; lineNum++) {
+    const startDisplay = Math.max(1, from);
+    const endDisplay = Math.min(to, docLines + lineNumberOffset - 1);
+
+    if (startDisplay > endDisplay) continue;
+
+    for (let displayLine = startDisplay; displayLine <= endDisplay; displayLine++) {
+      const internalLine = displayLine - lineNumberOffset + 1;
+
+      if (internalLine < 1 || internalLine > docLines) continue;
+
       try {
-        const line = view.state.doc.line(lineNum);
+        const line = view.state.doc.line(internalLine);
         decorations.push({
           from: line.from,
-          to: line.to,
+          to: line.from,
           value: Decoration.line({
             attributes: {
               style: `background-color: ${color};`,
@@ -65,25 +76,42 @@ function buildLineDecorations(
   return Decoration.set(decorations.sort((a, b) => a.from - b.from));
 }
 
-function dynamicLineHighlighter(getHighlights: () => LineHighlight[]): Extension {
+interface LineHighlighterConfig {
+  getHighlights: () => LineHighlight[];
+  getLineNumberOffset: () => number;
+}
+
+function dynamicLineHighlighter(config: LineHighlighterConfig): Extension {
+  const {getHighlights, getLineNumberOffset} = config;
+
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
-      lastHighlights: string;
+      lastState: string;
 
       constructor(view: EditorView) {
         const highlights = getHighlights();
-        this.lastHighlights = JSON.stringify(highlights);
-        this.decorations = buildLineDecorations(highlights, view);
+        const offset = getLineNumberOffset();
+        this.lastState = JSON.stringify({highlights, offset});
+        this.decorations = buildLineDecorations(highlights, view, offset);
       }
 
       update(update: ViewUpdate) {
         const highlights = getHighlights();
-        const highlightsStr = JSON.stringify(highlights);
+        const offset = getLineNumberOffset();
+        const currentState = JSON.stringify({highlights, offset});
 
-        if (update.docChanged || update.viewportChanged || highlightsStr !== this.lastHighlights) {
-          this.lastHighlights = highlightsStr;
-          this.decorations = buildLineDecorations(highlights, update.view);
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          currentState !== this.lastState
+        ) {
+          this.lastState = currentState;
+          this.decorations = buildLineDecorations(
+            highlights,
+            update.view,
+            offset,
+          );
         }
       }
     },
@@ -249,9 +277,14 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
     }
   });
 
-  const lineNumberStart = createMemo(() => editor()?.lineNumberStart);
+  const lineNumberStart = createMemo(() => editor()?.lineNumberStart ?? 1);
+  const highlightedLines = createMemo(() => editor()?.highlightedLines ?? []);
+
+  const getHighlights = (): LineHighlight[] => highlightedLines();
+  const getLineNumberOffset = (): number => lineNumberStart();
+
   createExtension(() => {
-    const lnStart = lineNumberStart() ?? 1;
+    const lnStart = lineNumberStart();
     const newLn = (ln: number) => ln + (lnStart - 1);
     return editorState.options.showLineNumbers
       ? lineNumbers({formatNumber: lineNo => String(newLn(lineNo))})
@@ -260,8 +293,25 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
   createExtension(() => themeConfiguration()?.editorTheme || []);
   createExtension(baseTheme);
 
-  const highlightedLines = createMemo(() => editor()?.highlightedLines ?? []);
-  createExtension(() => dynamicLineHighlighter(highlightedLines));
+  createExtension(
+    dynamicLineHighlighter({
+      getHighlights,
+      getLineNumberOffset,
+    }),
+  );
+
+  createEffect(
+    on(
+      [highlightedLines, lineNumberStart],
+      () => {
+        const view = editorView();
+        if (view) {
+          view.dispatch({});
+        }
+      },
+      {defer: true},
+    ),
+  );
 
   const reconfigureBaseSetup = createExtension(EDITOR_BASE_SETUP);
 

@@ -2,7 +2,7 @@ import {SUPPORTED_LANGUAGES} from '@codeimage/config';
 import {useI18n} from '@codeimage/locale';
 import {getRootEditorStore} from '@codeimage/store/editor';
 import {getUiStore} from '@codeimage/store/ui';
-import type {EditorMode, TerminalEditorOptions} from '@codeimage/store/editor/model';
+import type {EditorMode, TerminalEditorOptions, TerminalEditorOptionsUpdate} from '@codeimage/store/editor/model';
 import {toast} from '@codeimage/ui';
 import {appEnvironment} from '@core/configuration';
 import {clamp, isNonNullable} from '@solid-primitives/utils';
@@ -73,7 +73,7 @@ const $activeEditorState = () => {
       getRootEditorStore().actions.setEditorMode({editorId, mode});
     };
 
-    const setTerminalOptions = (options: Partial<TerminalEditorOptions>) => {
+    const setTerminalOptions = (options: TerminalEditorOptionsUpdate) => {
       const editorId = currentEditor()?.id;
       if (!editorId) return;
       getRootEditorStore().actions.setTerminalOptions({editorId, options});

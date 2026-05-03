@@ -9,13 +9,12 @@ import {
 import type {AnsiStyle, AnsiToken} from '@core/ansi/ansi-parser';
 import {assignInlineVars} from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type {FlowComponent, Ref} from 'solid-js';
+import type {Component, ParentComponent, Ref} from 'solid-js';
 import {
   createEffect,
   createMemo,
   createSignal,
   For,
-  on,
   Show,
   splitProps,
 } from 'solid-js';
@@ -144,7 +143,7 @@ interface AnsiSpanProps {
   palette: AnsiColorPalette;
 }
 
-const AnsiSpan: FlowComponent<AnsiSpanProps> = props => {
+const AnsiSpan: Component<AnsiSpanProps> = props => {
   const inlineStyles = createMemo(() =>
     buildInlineStyles(props.token.style, props.palette),
   );
@@ -169,7 +168,7 @@ interface TerminalLineProps {
   cursorPosition?: {line: number; column: number};
 }
 
-const TerminalLine: FlowComponent<TerminalLineProps> = props => {
+const TerminalLine: Component<TerminalLineProps> = props => {
   const [local, rest] = splitProps(props, ['tokens', 'palette', 'isLastLine', 'showPrompt', 'options', 'cursorPosition']);
 
   const hasCursor = () => {
@@ -199,7 +198,7 @@ const TerminalLine: FlowComponent<TerminalLineProps> = props => {
   );
 };
 
-export const TerminalEditor: FlowComponent<TerminalEditorProps> = props => {
+export const TerminalEditor: Component<TerminalEditorProps> = props => {
   const [local, rest] = splitProps(props, [
     'value',
     'onChange',
@@ -216,7 +215,7 @@ export const TerminalEditor: FlowComponent<TerminalEditorProps> = props => {
       hostname: 'localhost',
       directory: '~',
       showPrompt: true,
-      promptStyle: 'default',
+      promptStyle: 'default' as const,
     },
     showCursor: true,
     cursorBlink: false,

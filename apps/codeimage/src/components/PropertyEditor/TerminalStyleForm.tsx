@@ -1,7 +1,7 @@
 import {ANSI_THEMES, ANSI_THEME_KEYS} from '@core/ansi';
 import {useI18n} from '@codeimage/locale';
 import {getActiveEditorStore} from '@codeimage/store/editor/activeEditor';
-import type {EditorMode, TerminalPromptConfig} from '@codeimage/store/editor/model';
+import type {EditorMode} from '@codeimage/store/editor/model';
 import {createSelectOptions, Select, TextField} from '@codeui/kit';
 import {DynamicSizedContainer} from '@ui/DynamicSizedContainer/DynamicSizedContainer';
 import {SegmentedField} from '@ui/SegmentedField/SegmentedField';
@@ -9,9 +9,9 @@ import {SkeletonLine} from '@ui/Skeleton/Skeleton';
 import type {ParentComponent} from 'solid-js';
 import {createMemo, Show} from 'solid-js';
 import type {AppLocaleEntries} from '../../i18n';
-import {PanelHeader} from '../PanelHeader';
-import {PanelRow, TwoColumnPanelRow} from '../PanelRow';
-import {SuspenseEditorItem} from '../SuspenseEditorItem';
+import {PanelHeader} from './PanelHeader';
+import {PanelRow, TwoColumnPanelRow} from './PanelRow';
+import {SuspenseEditorItem} from './SuspenseEditorItem';
 
 export const TerminalStyleForm: ParentComponent = () => {
   const [t] = useI18n<AppLocaleEntries>();
@@ -80,6 +80,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                   <SuspenseEditorItem
                     fallback={<SkeletonLine width={'100%'} height={'26px'} />}
                   >
+                    {/* @ts-expect-error Fix @codeui/kit types */}
                     <Select
                       {...ansiThemeOptions.props()}
                       {...ansiThemeOptions.controlled(
@@ -113,7 +114,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                       value={terminalOptions()?.prompt.showPrompt ?? true}
                       onChange={value => {
                         setTerminalOptions({
-                          prompt: {showPrompt: value} as Partial<TerminalPromptConfig>,
+                          prompt: {showPrompt: value},
                         });
                       }}
                       items={[
@@ -131,6 +132,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                     <SuspenseEditorItem
                       fallback={<SkeletonLine width={'100%'} height={'26px'} />}
                     >
+                      {/* @ts-expect-error Fix @codeui/kit types */}
                       <Select
                         {...promptStyleOptions.props()}
                         {...promptStyleOptions.controlled(
@@ -138,8 +140,8 @@ export const TerminalStyleForm: ParentComponent = () => {
                           style => {
                             setTerminalOptions({
                               prompt: {
-                                promptStyle: style as TerminalPromptConfig['promptStyle'],
-                              } as Partial<TerminalPromptConfig>,
+                                promptStyle: style as 'default' | 'minimal' | 'full',
+                              },
                             });
                           },
                         )}
@@ -163,7 +165,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                         value={terminalOptions()?.prompt.username ?? 'user'}
                         onChange={value => {
                           setTerminalOptions({
-                            prompt: {username: value} as Partial<TerminalPromptConfig>,
+                            prompt: {username: value},
                           });
                         }}
                       />
@@ -182,7 +184,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                         value={terminalOptions()?.prompt.hostname ?? 'localhost'}
                         onChange={value => {
                           setTerminalOptions({
-                            prompt: {hostname: value} as Partial<TerminalPromptConfig>,
+                            prompt: {hostname: value},
                           });
                         }}
                       />
@@ -201,7 +203,7 @@ export const TerminalStyleForm: ParentComponent = () => {
                         value={terminalOptions()?.prompt.directory ?? '~'}
                         onChange={value => {
                           setTerminalOptions({
-                            prompt: {directory: value} as Partial<TerminalPromptConfig>,
+                            prompt: {directory: value},
                           });
                         }}
                       />

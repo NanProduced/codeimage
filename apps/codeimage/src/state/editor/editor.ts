@@ -244,7 +244,7 @@ export function createEditorsStore() {
   const setFromWorkspace = (item: ApiTypes.GetProjectByIdApi['response']) => {
     setEditors(
       item.editorTabs.map(
-        editor =>
+        (editor: any) =>
           ({
             tab: {
               tabName: editor.tabName,
@@ -254,7 +254,6 @@ export function createEditorsStore() {
             id: editor.id,
             code: editor.code,
             lineNumberStart: editor.lineNumberStart ?? 1,
-            // @ts-expect-error - highlightedLines may not exist in API type yet
             highlightedLines: editor.highlightedLines ?? [],
           }) as EditorState,
       ),

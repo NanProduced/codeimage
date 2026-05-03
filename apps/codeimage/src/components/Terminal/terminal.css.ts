@@ -61,14 +61,14 @@ export const content = style({
   position: 'relative',
   overflow: 'auto',
   fontSize: themeVars.fontSize.base,
-  paddingBottom: themeVars.spacing['4'],
+  paddingBottom: themeVars.spacing['10'],
   paddingTop: themeVars.spacing['5'],
   paddingInlineStart: themeVars.spacing['4'],
   paddingInlineEnd: themeVars.spacing['4'],
 
   selectors: {
     [`[data-lite=true] &`]: {
-      paddingBottom: themeVars.spacing['2'],
+      paddingBottom: themeVars.spacing['8'],
       paddingTop: themeVars.spacing['3'],
       paddingInlineStart: themeVars.spacing['2'],
       paddingInlineEnd: themeVars.spacing['2'],
@@ -106,7 +106,7 @@ export const header = style({
 export const watermark = style({
   position: 'absolute',
   right: '6px',
-  bottom: '-6px',
+  bottom: '8px',
   opacity: 0.35,
   backgroundColor: 'inherit',
 });
@@ -130,7 +130,7 @@ export const userWatermarkCenter = style({
 });
 
 export const userWatermarkRight = style({
-  right: '16px',
+  right: '140px',
 });
 
 export const userWatermarkAvatar = style({

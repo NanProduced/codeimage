@@ -49,6 +49,7 @@ export function createProjectRequestMapper(
         SnippetTerminalCreateRequestSchema.properties.alternativeTheme.default,
       shadow: data.terminal.shadow ?? null,
       borderType: data.terminal.borderType ?? null,
+      userWatermark: data.terminal.userWatermark ?? null,
     },
     editorOptions: {
       fontWeight: data.editorOptions.fontWeight,

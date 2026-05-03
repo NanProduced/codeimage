@@ -31,6 +31,7 @@ export function createCompleteProjectGetByIdResponseMapper(
       alternativeTheme: data.terminal.alternativeTheme,
       shadow: data.terminal.shadow,
       borderType: data.terminal.borderType as 'glass' | null,
+      userWatermark: data.terminal.userWatermark as ProjectCompleteResponse['terminal']['userWatermark'],
     },
     editorOptions: {
       id: data.editorOptions.id,

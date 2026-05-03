@@ -37,6 +37,21 @@ export const BaseSnippetFrameSchema = Type.Object({
 
 export const SnippetTerminalBorderType = enumLiteral(['glass'] as const);
 
+export const UserWatermarkConfigSchema = Type.Object({
+  enabled: Type.Boolean(),
+  text: Type.String(),
+  avatarUrl: Type.String(),
+  position: Type.Union([
+    Type.Literal('left'),
+    Type.Literal('center'),
+    Type.Literal('right'),
+  ]),
+  fontSize: Type.Number(),
+  color: Type.String(),
+  opacity: Type.Number(),
+  showOnlyOnExport: Type.Boolean(),
+});
+
 export const BaseSnippetTerminalSchema = Type.Object({
   id: Type.String({format: 'uuid'}),
   showHeader: Type.Boolean(),
@@ -50,6 +65,7 @@ export const BaseSnippetTerminalSchema = Type.Object({
   opacity: Type.Number(),
   alternativeTheme: Type.Boolean(),
   borderType: Nullable(SnippetTerminalBorderType),
+  userWatermark: Nullable(UserWatermarkConfigSchema),
 });
 
 export const BaseSnippetEditorOptionsSchema = Type.Object({

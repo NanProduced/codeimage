@@ -8,6 +8,7 @@ import {DynamicTerminal} from '../Terminal/DynamicTerminal/DynamicTerminal';
 import {Frame} from './Frame';
 
 const CanvasEditor = lazy(() => import('../CustomEditor/CanvasEditor'));
+const DiffEditor = lazy(() => import('../DiffEditor/DiffEditor'));
 
 export function ManagedFrame() {
   const frame = getFrameState().store;
@@ -43,8 +44,13 @@ export function ManagedFrame() {
         borderType={terminal.borderType}
         themeId={editor.state.options.themeId}
       >
-        <Show when={getActiveEditorStore().editor()}>
-          <CanvasEditor readOnly={readOnly()} />
+        <Show when={editor.state.mode === 'single'}>
+          <Show when={getActiveEditorStore().editor()}>
+            <CanvasEditor readOnly={readOnly()} />
+          </Show>
+        </Show>
+        <Show when={editor.state.mode === 'diff'}>
+          <DiffEditor readOnly={readOnly()} />
         </Show>
       </DynamicTerminal>
     </Frame>

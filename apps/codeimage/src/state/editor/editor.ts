@@ -12,7 +12,13 @@ import {createSelector} from 'solid-js';
 import type {SetStoreFunction} from 'solid-js/store';
 import {defineStore, provideState} from 'statebuilder';
 import {createCommand, withProxyCommands} from 'statebuilder/commands';
-import type {EditorState, EditorUIOptions, PersistedEditorState} from './model';
+import type {
+  DiffEditorState,
+  EditorMode,
+  EditorState,
+  EditorUIOptions,
+  PersistedEditorState,
+} from './model';
 
 const defaultId = createUniqueId();
 
@@ -27,6 +33,16 @@ export function getInitialEditorState(): EditorState {
       tabName: 'index.tsx',
       tabIcon: undefined,
     },
+  };
+}
+
+export function getInitialDiffEditorState(): DiffEditorState {
+  return {
+    leftCode: '// Original code\nfunction hello() {\n  console.log("Hello");\n}',
+    rightCode: '// Modified code\nfunction helloWorld() {\n  console.log("Hello World");\n  return true;\n}',
+    tabName: 'index.tsx',
+    languageId: appEnvironment.defaultState.editor.languageId,
+    lineNumberStart: 1,
   };
 }
 
@@ -45,7 +61,9 @@ export function createEditorsStore() {
   const MAX_TABS = 6;
 
   const config = defineStore(() => ({
+    mode: 'single' as EditorMode,
     editors: [getInitialEditorState()],
+    diffEditor: getInitialDiffEditorState(),
     options: getInitialEditorUiOptions(),
     activeEditorId: defaultId,
   })).extend(
@@ -59,6 +77,7 @@ export function createEditorsStore() {
       setFromPersistedState: PersistedEditorState;
       setFromPreset: PresetData['editor'];
       setEnableLigatures: boolean;
+      setMode: EditorMode;
     }>(),
   );
 
@@ -93,6 +112,9 @@ export function createEditorsStore() {
     .hold(store.commands.setEnableLigatures, (enable, {set}) =>
       set('options', 'enableLigatures', enable),
     )
+    .hold(store.commands.setMode, (mode, {set}) => {
+      set('mode', mode);
+    })
     .hold(store.commands.setFromPreset, presetData => {
       store.set('options', presetData);
       store.dispatch(editorUpdateCommand, void 0);
@@ -107,7 +129,9 @@ export function createEditorsStore() {
           code: editor.code,
           lineNumberStart: editor.lineNumberStart,
         }));
+      const mode = persistedState.mode ?? 'single';
       return {
+        mode,
         options: {...state.options, ...persistedState.options},
         activeEditorId: editors[0].id,
         editors: editors.map(editor => {
@@ -119,6 +143,12 @@ export function createEditorsStore() {
             lineNumberStart: editor.lineNumberStart,
           };
         }),
+        diffEditor: persistedState.diffEditor
+          ? {
+              ...state.diffEditor,
+              ...persistedState.diffEditor,
+            }
+          : state.diffEditor,
       };
     });
 
@@ -133,6 +163,7 @@ export function createEditorsStore() {
     state: typeof store.get,
   ): PersistedEditorState => {
     return {
+      mode: state.mode,
       editors: state.editors.map(editor => {
         return {
           languageId: editor.languageId,
@@ -142,6 +173,13 @@ export function createEditorsStore() {
           lineNumberStart: editor.lineNumberStart ?? 1,
         };
       }),
+      diffEditor: {
+        leftCode: state.diffEditor.leftCode,
+        rightCode: state.diffEditor.rightCode,
+        tabName: state.diffEditor.tabName,
+        languageId: state.diffEditor.languageId,
+        lineNumberStart: state.diffEditor.lineNumberStart,
+      },
       options: {
         themeId: state.options.themeId,
         showLineNumbers: state.options.showLineNumbers,
@@ -159,6 +197,7 @@ export function createEditorsStore() {
       store.commands.setFontWeight,
       store.commands.setShowLineNumbers,
       store.commands.setEnableLigatures,
+      store.commands.setMode,
       editorUpdateCommand,
     ]),
   ).pipe(

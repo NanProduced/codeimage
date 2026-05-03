@@ -27,6 +27,10 @@ const PreviewExportEditor = lazy(
   () => import('../CustomEditor/PreviewExportEditor'),
 );
 
+const DiffEditorPreview = lazy(
+  () => import('../DiffEditor/DiffEditorPreview'),
+);
+
 function PreviewPortal(props: ParentProps) {
   const config = provideState(EditorConfigStore);
   return (
@@ -126,8 +130,20 @@ export function PreviewFrame(props: VoidProps<PreviewFrameProps>) {
             borderType={terminal.borderType}
             themeId={editor.state.options.themeId}
           >
-            <Show when={getActiveEditorStore().editor()}>
-              <PreviewExportEditor onSetEditorView={setPreviewEditorView} />
+            <Show when={editor.state.mode === 'single'}>
+              <Show when={getActiveEditorStore().editor()}>
+                <PreviewExportEditor onSetEditorView={setPreviewEditorView} />
+              </Show>
+            </Show>
+            <Show when={editor.state.mode === 'diff'}>
+              <DiffEditorPreview
+                leftCode={editor.state.diffEditor.leftCode}
+                rightCode={editor.state.diffEditor.rightCode}
+                languageId={editor.state.diffEditor.languageId}
+                themeId={editor.state.options.themeId}
+                lineNumberStart={editor.state.diffEditor.lineNumberStart}
+                showLineNumbers={editor.state.options.showLineNumbers}
+              />
             </Show>
           </DynamicTerminal>
         </div>

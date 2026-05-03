@@ -1,5 +1,18 @@
 import type {PersistedFrameState} from '@codeimage/store/frame/model';
 
+export type EditorMode = 'single' | 'diff';
+
+export type DiffLineType = 'added' | 'removed' | 'unchanged' | 'modified';
+
+export interface DiffLine {
+  type: DiffLineType;
+  content: string;
+  lineNumber: {
+    left: number | null;
+    right: number | null;
+  };
+}
+
 export interface EditorUIOptions {
   fontId: string;
   fontWeight: number;
@@ -22,6 +35,14 @@ export interface EditorState {
   lineNumberStart: number;
 }
 
+export interface DiffEditorState {
+  leftCode: string;
+  rightCode: string;
+  tabName: string | null;
+  languageId: string;
+  lineNumberStart: number;
+}
+
 export interface EditorUIOptions {
   fontId: string;
   fontWeight: number;
@@ -33,6 +54,7 @@ export interface EditorUIOptions {
 
 export interface PersistedEditorState {
   readonly options: Omit<EditorUIOptions, 'focused'>;
+  readonly mode: EditorMode;
   readonly editors: {
     id: string;
     code: string;
@@ -40,6 +62,13 @@ export interface PersistedEditorState {
     languageId: string;
     lineNumberStart: number;
   }[];
+  readonly diffEditor?: {
+    leftCode: string;
+    rightCode: string;
+    tabName: string | null;
+    languageId: string;
+    lineNumberStart: number;
+  };
 }
 
 export interface TerminalState {

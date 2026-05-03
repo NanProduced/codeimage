@@ -1,7 +1,10 @@
 import type {Static} from '@sinclair/typebox';
 import {Type} from '@sinclair/typebox';
 import {Nullable} from '../../../common/typebox/nullable.js';
-import {SnippetTerminalBorderType} from './project.schema.js';
+import {
+  SnippetTerminalBorderType,
+  UserWatermarkConfigSchema,
+} from './project.schema.js';
 
 export const SnippetFrameUpdateRequestSchema = Type.Object(
   {
@@ -43,6 +46,7 @@ const SnippetTerminalUpdateRequestSchema = Type.Object(
     textColor: Nullable(Type.String()),
     type: Type.String(),
     borderType: Nullable(SnippetTerminalBorderType),
+    userWatermark: Nullable(UserWatermarkConfigSchema),
   },
   {title: 'SnippetTerminalUpdateRequest'},
 );

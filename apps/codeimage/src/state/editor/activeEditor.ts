@@ -96,6 +96,48 @@ const $activeEditorState = () => {
       });
     });
 
+    const addHighlightLine = (
+      startLine: number,
+      endLine: number,
+      color: string,
+    ) => {
+      const highlightLines = currentEditor()?.highlightLines ?? [];
+      const newHighlightLine = {
+        id: `highlight-${Date.now()}`,
+        startLine,
+        endLine,
+        color,
+      };
+      setEditors(currentEditorIndex(), 'highlightLines', [
+        ...highlightLines,
+        newHighlightLine,
+      ]);
+    };
+
+    const updateHighlightLine = (
+      id: string,
+      updates: Partial<{startLine: number; endLine: number; color: string}>,
+    ) => {
+      const highlightLines = currentEditor()?.highlightLines ?? [];
+      const updatedLines = highlightLines.map(line => {
+        if (line.id === id) {
+          return {...line, ...updates};
+        }
+        return line;
+      });
+      setEditors(currentEditorIndex(), 'highlightLines', updatedLines);
+    };
+
+    const removeHighlightLine = (id: string) => {
+      const highlightLines = currentEditor()?.highlightLines ?? [];
+      const updatedLines = highlightLines.filter(line => line.id !== id);
+      setEditors(currentEditorIndex(), 'highlightLines', updatedLines);
+    };
+
+    const clearHighlightLines = () => {
+      setEditors(currentEditorIndex(), 'highlightLines', []);
+    };
+
     return {
       editor: currentEditor,
       setLanguageId,
@@ -104,6 +146,10 @@ const $activeEditorState = () => {
       formatter,
       setFormatterName,
       canFormat: formatter.canFormat,
+      addHighlightLine,
+      updateHighlightLine,
+      removeHighlightLine,
+      clearHighlightLines,
       format(code = currentEditor()?.code ?? '') {
         return new Promise(async r => {
           try {

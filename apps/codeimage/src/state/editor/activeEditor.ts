@@ -8,6 +8,8 @@ import {clamp, isNonNullable} from '@solid-primitives/utils';
 import {createEffect, createMemo, createRoot, on} from 'solid-js';
 import {createPrettierFormatter} from '../../hooks/createPrettierFormatter';
 import type {AppLocaleEntries} from '../../i18n';
+import type {LineHighlight} from './model';
+import {createUniqueId} from '@codeimage/store/plugins/unique-id';
 
 const $activeEditorState = () => {
   return createRoot(() => {
@@ -66,6 +68,40 @@ const $activeEditorState = () => {
     const setFormatterName = (formatter: string | null) =>
       setEditors(currentEditorIndex(), 'formatter', formatter);
 
+    const addHighlight = (from: number, to: number, color: string) => {
+      const highlight: LineHighlight = {
+        id: createUniqueId(),
+        from,
+        to,
+        color,
+      };
+      setEditors(currentEditorIndex(), 'highlightedLines', lines => [
+        ...(lines ?? []),
+        highlight,
+      ]);
+    };
+
+    const removeHighlight = (highlightId: string) => {
+      setEditors(currentEditorIndex(), 'highlightedLines', lines =>
+        (lines ?? []).filter(h => h.id !== highlightId),
+      );
+    };
+
+    const updateHighlight = (
+      highlightId: string,
+      updates: Partial<Pick<LineHighlight, 'from' | 'to' | 'color'>>,
+    ) => {
+      setEditors(currentEditorIndex(), 'highlightedLines', lines =>
+        (lines ?? []).map(h =>
+          h.id === highlightId ? {...h, ...updates} : h,
+        ),
+      );
+    };
+
+    const clearHighlights = () => {
+      setEditors(currentEditorIndex(), 'highlightedLines', []);
+    };
+
     const formatter = createPrettierFormatter(
       () => currentEditor()?.languageId ?? '',
       () => currentEditor()?.tab?.tabName ?? '',
@@ -104,6 +140,10 @@ const $activeEditorState = () => {
       formatter,
       setFormatterName,
       canFormat: formatter.canFormat,
+      addHighlight,
+      removeHighlight,
+      updateHighlight,
+      clearHighlights,
       format(code = currentEditor()?.code ?? '') {
         return new Promise(async r => {
           try {

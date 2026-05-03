@@ -1,5 +1,12 @@
 import type {PersistedFrameState} from '@codeimage/store/frame/model';
 
+export interface LineHighlight {
+  id: string;
+  from: number;
+  to: number;
+  color: string;
+}
+
 export interface EditorUIOptions {
   fontId: string;
   fontWeight: number;
@@ -20,6 +27,7 @@ export interface EditorState {
   formatter?: string | null;
   languageId: string;
   lineNumberStart: number;
+  highlightedLines: LineHighlight[];
 }
 
 export interface EditorUIOptions {
@@ -39,6 +47,7 @@ export interface PersistedEditorState {
     tabName: string;
     languageId: string;
     lineNumberStart: number;
+    highlightedLines: LineHighlight[];
   }[];
 }
 

@@ -4,22 +4,34 @@ import type {CustomTheme} from '@codeimage/highlight';
 import {useI18n} from '@codeimage/locale';
 import {getRootEditorStore} from '@codeimage/store/editor';
 import {getActiveEditorStore} from '@codeimage/store/editor/activeEditor';
+import type {LineHighlight} from '@codeimage/store/editor/model';
 import {dispatchUpdateTheme} from '@codeimage/store/effects/onThemeChange';
 import {getThemeStore} from '@codeimage/store/theme/theme.store';
-import {createSelectOptions, NumberField, Select} from '@codeui/kit';
+import {Button, createSelectOptions, NumberField, Select} from '@codeui/kit';
 import {appEnvironment} from '@core/configuration';
 import {getUmami} from '@core/constants/umami';
 import {DynamicSizedContainer} from '@ui/DynamicSizedContainer/DynamicSizedContainer';
 import {SegmentedField} from '@ui/SegmentedField/SegmentedField';
 import {SkeletonLine} from '@ui/Skeleton/Skeleton';
 import type {ParentComponent} from 'solid-js';
-import {Show} from 'solid-js';
+import {createMemo, For, Show} from 'solid-js';
 import type {AppLocaleEntries} from '../../i18n';
 import {FontPicker} from './controls/FontPicker/FontPicker';
 import {PanelDivider} from './PanelDivider';
 import {PanelHeader} from './PanelHeader';
 import {PanelRow, TwoColumnPanelRow} from './PanelRow';
 import {SuspenseEditorItem} from './SuspenseEditorItem';
+
+const DEFAULT_HIGHLIGHT_COLORS = [
+  'rgba(255, 107, 107, 0.3)',
+  'rgba(78, 205, 196, 0.3)',
+  'rgba(69, 183, 209, 0.3)',
+  'rgba(150, 206, 180, 0.3)',
+  'rgba(255, 238, 173, 0.3)',
+  'rgba(255, 154, 162, 0.3)',
+  'rgba(255, 183, 77, 0.3)',
+  'rgba(162, 155, 254, 0.3)',
+];
 
 const languages: readonly LanguageDefinition[] = [...SUPPORTED_LANGUAGES].sort(
   (a, b) => {
@@ -45,12 +57,34 @@ export const EditorStyleForm: ParentComponent = () => {
     formatter,
     setFormatterName,
     setLineNumberStart,
+    addHighlight,
+    removeHighlight,
+    updateHighlight,
+    clearHighlights,
   } = getActiveEditorStore();
   const {
     state,
     actions: {setShowLineNumbers, setFontWeight, setFontId, setEnableLigatures},
     computed: {selectedFont},
   } = getRootEditorStore();
+
+  const highlightedLines = createMemo(() => editor()?.highlightedLines ?? []);
+
+  const colorOptions = createSelectOptions(
+    DEFAULT_HIGHLIGHT_COLORS.map((color, index) => ({
+      label: `Color ${index + 1}`,
+      value: color,
+    })),
+    {
+      key: 'label',
+      valueKey: 'value',
+    },
+  );
+
+  const handleAddHighlight = () => {
+    const defaultColor = DEFAULT_HIGHLIGHT_COLORS[0];
+    addHighlight(1, 1, defaultColor);
+  };
 
   const languagesOptions = createSelectOptions(
     languages.map(language => ({
@@ -251,6 +285,136 @@ export const EditorStyleForm: ParentComponent = () => {
                 </TwoColumnPanelRow>
               </PanelRow>
             </Show>
+          </DynamicSizedContainer>
+
+          <PanelDivider />
+
+          <DynamicSizedContainer>
+            <PanelHeader label={t('frame.highlightLines')} />
+
+            <For each={highlightedLines()}>
+              {(highlight: LineHighlight) => (
+                <>
+                  <PanelRow
+                    for={`highlightFrom-${highlight.id}`}
+                    label={t('frame.fromLine')}
+                  >
+                    <TwoColumnPanelRow>
+                      <SuspenseEditorItem
+                        fallback={<SkeletonLine width={'100%'} height={'26px'} />}
+                      >
+                        <NumberField
+                          size={'xs'}
+                          min={1}
+                          max={999}
+                          id={`highlightFrom-${highlight.id}`}
+                          value={highlight.from}
+                          onChange={value =>
+                            updateHighlight(highlight.id, {from: value ?? 1})
+                          }
+                        />
+                      </SuspenseEditorItem>
+                    </TwoColumnPanelRow>
+                  </PanelRow>
+
+                  <PanelRow
+                    for={`highlightTo-${highlight.id}`}
+                    label={t('frame.toLine')}
+                  >
+                    <TwoColumnPanelRow>
+                      <SuspenseEditorItem
+                        fallback={<SkeletonLine width={'100%'} height={'26px'} />}
+                      >
+                        <NumberField
+                          size={'xs'}
+                          min={1}
+                          max={999}
+                          id={`highlightTo-${highlight.id}`}
+                          value={highlight.to}
+                          onChange={value =>
+                            updateHighlight(highlight.id, {to: value ?? 1})
+                          }
+                        />
+                      </SuspenseEditorItem>
+                    </TwoColumnPanelRow>
+                  </PanelRow>
+
+                  <PanelRow
+                    for={`highlightColor-${highlight.id}`}
+                    label={t('frame.highlightColor')}
+                  >
+                    <TwoColumnPanelRow>
+                      <SuspenseEditorItem
+                        fallback={<SkeletonLine width={'100%'} height={'26px'} />}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: '8px',
+                            'align-items': 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              'border-radius': '4px',
+                              'background-color': highlight.color,
+                              border: '1px solid rgba(255,255,255,0.2)',
+                            }}
+                          />
+                          {/* @ts-expect-error Fix @codeui/kit types */}
+                          <Select
+                            {...colorOptions.props()}
+                            {...colorOptions.controlled(
+                              () => highlight.color,
+                              color => {
+                                updateHighlight(highlight.id, {
+                                  color: color as string,
+                                });
+                              },
+                            )}
+                            options={colorOptions.options()}
+                            aria-label={'Highlight color'}
+                            id={`highlightColor-${highlight.id}`}
+                            size={'xs'}
+                          />
+                          <Button
+                            size={'xs'}
+                            variant={'ghost'}
+                            onClick={() => removeHighlight(highlight.id)}
+                          >
+                            {t('frame.removeHighlight')}
+                          </Button>
+                        </div>
+                      </SuspenseEditorItem>
+                    </TwoColumnPanelRow>
+                  </PanelRow>
+                </>
+              )}
+            </For>
+
+            <PanelRow for={'addHighlight'} label={''}>
+              <TwoColumnPanelRow>
+                <Button
+                  size={'xs'}
+                  variant={'ghost'}
+                  onClick={handleAddHighlight}
+                >
+                  {t('frame.addHighlight')}
+                </Button>
+                <Show when={highlightedLines().length > 0}>
+                  <Button
+                    size={'xs'}
+                    variant={'ghost'}
+                    onClick={clearHighlights}
+                    style={{'margin-left': '8px'}}
+                  >
+                    Clear All
+                  </Button>
+                </Show>
+              </TwoColumnPanelRow>
+            </PanelRow>
           </DynamicSizedContainer>
 
           <PanelDivider />

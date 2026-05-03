@@ -219,9 +219,8 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
 
   createEffect(
     on(
-      () => editor()?.highlightLines,
-      highlightLinesData => {
-        const view = editorView();
+      [() => editor()?.highlightLines, editorView],
+      ([highlightLinesData, view]) => {
         if (!view || !highlightLinesData) return;
 
         const lineNumberOffset = (editor()?.lineNumberStart ?? 1) - 1;

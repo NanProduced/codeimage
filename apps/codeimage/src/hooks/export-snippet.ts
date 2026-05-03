@@ -11,27 +11,29 @@ type InternalEditorView = EditorView & {
   measure?(): void;
 };
 
-export let previewEditorView!: EditorView;
+export let previewEditorView: EditorView | undefined;
 
-export function setPreviewEditorView(editorView: EditorView) {
+export function setPreviewEditorView(editorView: EditorView | undefined) {
   previewEditorView = editorView;
 }
 
 export function exportSnippet(options: ExportImagePayload) {
-  const editorView = previewEditorView as InternalEditorView;
-  if (editorView.viewState && editorView.measure) {
-    // We need to set the viewState `printing` property to true in order to render the entire code block
+  const editorView = previewEditorView as InternalEditorView | undefined;
+  
+  if (editorView && editorView.viewState && editorView.measure) {
     editorView.viewState.printing = true;
-    // Then we measure again the editor in order to render every block
     editorView.measure();
   }
+  
   return exportImage(options).finally(() => {
-    if (editorView.viewState) {
-      // At the end of the render we need to put the printing property to false
-      editorView.viewState.printing = false;
+    if (editorView) {
+      if (editorView.viewState) {
+        editorView.viewState.printing = false;
+      }
+      if (editorView.requestMeasure) {
+        editorView.requestMeasure();
+      }
     }
-    // Then we do a request measure since this event can be scheduled
-    editorView.requestMeasure();
   });
 }
 

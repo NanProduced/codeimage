@@ -1,5 +1,5 @@
 import type {LanguageIconDefinition} from '@codeimage/config';
-import type {TerminalState} from '@codeimage/store/editor/model';
+import type {EditorMode, TerminalEditorOptions, TerminalState} from '@codeimage/store/editor/model';
 import {FadeInOutTransition} from '@codeimage/ui';
 import {assignInlineVars} from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
@@ -19,6 +19,8 @@ export interface BaseTerminalProps extends Omit<TerminalState, 'type'> {
   lite?: boolean;
   showOnlyActiveTab?: boolean;
   themeId: string;
+  editorMode?: EditorMode;
+  terminalOptions?: TerminalEditorOptions;
 }
 
 export interface TerminalHostProps extends BaseTerminalProps {

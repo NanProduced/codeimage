@@ -19,6 +19,20 @@ export const headerIconRow = style({
   columnGap: themeVars.spacing['2'],
 });
 
+export const terminalPromptHeader = style({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  fontSize: themeVars.fontSize.sm,
+  fontWeight: 500,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  paddingRight: themeVars.spacing['12'],
+});
+
 export const headerIconRowCircle = style({
   selectors: {
     [`${headerIconRow}[data-header-type=gray] &`]: {

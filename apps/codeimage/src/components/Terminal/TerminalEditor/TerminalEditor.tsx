@@ -1,4 +1,4 @@
-import type {AnsiColorPalette, TerminalEditorOptions} from '@codeimage/store/editor/model';
+import type {AnsiColorPalette, EditorMode, TerminalEditorOptions} from '@codeimage/store/editor/model';
 import {
   getAnsiColor,
   getAnsiTheme,
@@ -17,6 +17,7 @@ import {
   For,
   Show,
   splitProps,
+  onCleanup,
 } from 'solid-js';
 import * as styles from './TerminalEditor.css';
 
@@ -27,6 +28,7 @@ export interface TerminalEditorProps {
   readOnly?: boolean;
   ref?: Ref<HTMLDivElement>;
   onPaste?: (event: ClipboardEvent, hasAnsi: boolean) => void;
+  editorMode?: EditorMode;
 }
 
 function buildInlineStyles(
@@ -94,6 +96,30 @@ function splitTokensByLines(tokens: AnsiToken[]): AnsiToken[][] {
   }
 
   return lines;
+}
+
+function mapAnsiPositionToPlain(ansiText: string, ansiPos: number): number {
+  if (ansiPos <= 0) return 0;
+  const substring = ansiText.substring(0, ansiPos);
+  return stripAnsi(substring).length;
+}
+
+function getLineAndColumn(text: string, position: number): {line: number; column: number} {
+  if (position <= 0) return {line: 0, column: 0};
+  
+  let line = 0;
+  let column = 0;
+  
+  for (let i = 0; i < position && i < text.length; i++) {
+    if (text[i] === '\n') {
+      line++;
+      column = 0;
+    } else if (text[i] !== '\r') {
+      column++;
+    }
+  }
+  
+  return {line, column};
 }
 
 function renderPrompt(options: TerminalEditorOptions) {
@@ -165,34 +191,49 @@ interface TerminalLineProps {
   isLastLine: boolean;
   showPrompt: boolean;
   options: TerminalEditorOptions;
-  cursorPosition?: {line: number; column: number};
+  lineIndex: number;
+  cursorLine?: number;
+  cursorColumn?: number;
 }
 
 const TerminalLine: Component<TerminalLineProps> = props => {
-  const [local, rest] = splitProps(props, ['tokens', 'palette', 'isLastLine', 'showPrompt', 'options', 'cursorPosition']);
+  const [local] = splitProps(props, [
+    'tokens', 'palette', 'isLastLine', 'showPrompt', 'options', 
+    'lineIndex', 'cursorLine', 'cursorColumn'
+  ]);
 
-  const hasCursor = () => {
-    if (!local.cursorPosition) return false;
-    return local.cursorPosition.line === -1 && local.isLastLine;
-  };
-
-  const cursorColumn = () => {
-    if (!local.cursorPosition) return 0;
-    return local.cursorPosition.column;
-  };
+  const hasCursor = () => local.cursorLine === local.lineIndex;
 
   return (
-    <div class={styles.terminalEditorLine} {...rest}>
+    <div class={styles.terminalEditorLine}>
       <Show when={local.showPrompt}>
         <span class={styles.terminalEditorPrompt}>
           {renderPrompt(local.options)}
         </span>
       </Show>
-      <For each={local.tokens}>
-        {token => <AnsiSpan token={token} palette={local.palette} />}
-      </For>
-      <Show when={local.tokens.length === 0}>
-        <span>&nbsp;</span>
+      
+      {local.tokens.length === 0 ? (
+        <>
+          <Show when={hasCursor()}>
+            <span class={local.options.cursorBlink ? styles.terminalCursor : styles.terminalCursorStatic} />
+          </Show>
+          <Show when={!hasCursor()}>
+            <span>&nbsp;</span>
+          </Show>
+        </>
+      ) : (
+        <For each={local.tokens}>
+          {token => (
+            <AnsiSpan 
+              token={token} 
+              palette={local.palette}
+            />
+          )}
+        </For>
+      )}
+      
+      <Show when={hasCursor() && local.tokens.length > 0}>
+        <span class={local.options.cursorBlink ? styles.terminalCursor : styles.terminalCursorStatic} />
       </Show>
     </div>
   );
@@ -206,6 +247,7 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
     'readOnly',
     'ref',
     'onPaste',
+    'editorMode',
   ]);
 
   const options = createMemo(() => local.options ?? {
@@ -227,13 +269,29 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
   const plainText = createMemo(() => stripAnsi(local.value ?? ''));
 
   const [textAreaRef, setTextAreaRef] = createSignal<HTMLTextAreaElement>();
-  const [cursorPosition, setCursorPosition] = createSignal<{line: number; column: number} | undefined>();
+  
+  const [cursorPos, setCursorPos] = createSignal<{line: number; column: number} | undefined>();
+
+  const updateCursor = () => {
+    const textArea = textAreaRef();
+    if (!textArea) return;
+    
+    const start = textArea.selectionStart;
+    const value = local.value ?? '';
+    const plain = plainText();
+    
+    const plainStart = mapAnsiPositionToPlain(value, start);
+    const pos = getLineAndColumn(plain, plainStart);
+    
+    setCursorPos(pos);
+  };
 
   const handleInput = (event: InputEvent) => {
     const target = event.target as HTMLTextAreaElement;
     if (local.onChange) {
       local.onChange(target.value);
     }
+    setTimeout(updateCursor, 0);
   };
 
   const handlePaste = (event: ClipboardEvent) => {
@@ -264,9 +322,18 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
         if (textAreaRef()) {
           textAreaRef()!.selectionStart = start + 2;
           textAreaRef()!.selectionEnd = start + 2;
+          updateCursor();
         }
       }, 0);
     }
+  };
+
+  const handleSelect = () => {
+    updateCursor();
+  };
+
+  const handleClick = () => {
+    setTimeout(updateCursor, 0);
   };
 
   createEffect(() => {
@@ -279,7 +346,23 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
         textArea.selectionStart = selectionStart;
         textArea.selectionEnd = selectionEnd;
       }
+      updateCursor();
     }
+  });
+
+  createEffect(() => {
+    const textArea = textAreaRef();
+    if (!textArea) return;
+    
+    textArea.addEventListener('select', handleSelect);
+    textArea.addEventListener('click', handleClick);
+    textArea.addEventListener('keyup', handleSelect);
+    
+    onCleanup(() => {
+      textArea.removeEventListener('select', handleSelect);
+      textArea.removeEventListener('click', handleClick);
+      textArea.removeEventListener('keyup', handleSelect);
+    });
   });
 
   const inlineStyles = createMemo(() =>
@@ -305,6 +388,8 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
         onInput={handleInput}
         onPaste={handlePaste}
         onKeyDown={handleKeyDown}
+        onSelect={handleSelect}
+        onClick={handleClick}
         readOnly={local.readOnly}
         spellcheck={false}
         autocomplete="off"
@@ -314,16 +399,22 @@ export const TerminalEditor: Component<TerminalEditorProps> = props => {
       <div class={styles.terminalEditorContent}>
         <div class={styles.terminalEditorDisplay}>
           <For each={lines()}>
-            {(lineTokens, index) => (
-              <TerminalLine
-                tokens={lineTokens}
-                palette={theme().palette}
-                isLastLine={index() === lines().length - 1}
-                showPrompt={index() === lines().length - 1}
-                options={options()}
-                cursorPosition={cursorPosition()}
-              />
-            )}
+            {(lineTokens, index) => {
+              const lineIdx = index();
+              
+              return (
+                <TerminalLine
+                  tokens={lineTokens}
+                  palette={theme().palette}
+                  isLastLine={lineIdx === lines().length - 1}
+                  showPrompt={lineIdx === lines().length - 1}
+                  options={options()}
+                  lineIndex={lineIdx}
+                  cursorLine={cursorPos()?.line}
+                  cursorColumn={cursorPos()?.column}
+                />
+              );
+            }}
           </For>
         </div>
       </div>

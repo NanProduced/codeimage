@@ -7,6 +7,19 @@ export const [theme, vars] = createTheme({
   controlSizeLite: '7px',
 });
 
+export const terminalPromptHeader = style({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  fontSize: themeVars.fontSize.sm,
+  fontWeight: 500,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  paddingInlineStart: themeVars.spacing['4'],
+});
+
 export const headerIconRow = style({
   display: 'flex',
   marginLeft: 'auto',

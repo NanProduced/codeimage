@@ -42,6 +42,10 @@ export interface TerminalEditorOptions {
   cursorBlink: boolean;
 }
 
+export type TerminalEditorOptionsUpdate = Partial<Omit<TerminalEditorOptions, 'prompt'>> & {
+  prompt?: Partial<TerminalPromptConfig>;
+};
+
 export interface EditorUIOptions {
   fontId: string;
   fontWeight: number;

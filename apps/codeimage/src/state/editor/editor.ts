@@ -18,6 +18,7 @@ import type {
   EditorUIOptions,
   PersistedEditorState,
   TerminalEditorOptions,
+  TerminalEditorOptionsUpdate,
 } from './model';
 
 const defaultId = createUniqueId();
@@ -83,7 +84,7 @@ export function createEditorsStore() {
       setFromPreset: PresetData['editor'];
       setEnableLigatures: boolean;
       setEditorMode: {editorId: string; mode: EditorMode};
-      setTerminalOptions: {editorId: string; options: Partial<TerminalEditorOptions>};
+      setTerminalOptions: {editorId: string; options: TerminalEditorOptionsUpdate};
     }>(),
   );
 
@@ -309,7 +310,7 @@ export function createEditorsStore() {
   const setFromWorkspace = (item: ApiTypes.GetProjectByIdApi['response']) => {
     setEditors(
       item.editorTabs.map(
-        editor =>
+        (editor: any) =>
           ({
             tab: {
               tabName: editor.tabName,
@@ -319,8 +320,8 @@ export function createEditorsStore() {
             id: editor.id,
             code: editor.code,
             lineNumberStart: editor.lineNumberStart ?? 1,
-            mode: (editor as any).mode ?? 'code',
-            terminalOptions: (editor as any).terminalOptions ?? getDefaultTerminalOptions(),
+            mode: editor.mode ?? 'code',
+            terminalOptions: editor.terminalOptions ?? getDefaultTerminalOptions(),
           }) as EditorState,
       ),
     );

@@ -10,11 +10,12 @@ import {dispatchCopyToClipboard} from '@codeimage/store/effects/onCopyToClipboar
 import {createRef} from '@core/helpers/create-ref';
 import {assignInlineVars} from '@vanilla-extract/dynamic';
 import type {ParentProps, Ref, VoidProps} from 'solid-js';
-import {lazy, onMount, Show, Suspense} from 'solid-js';
+import {createMemo, lazy, onMount, Show, Suspense} from 'solid-js';
 import {Portal} from 'solid-js/web';
 import {provideState} from 'statebuilder';
 import {setPreviewEditorView} from '../../hooks/export-snippet';
 import {useHotkey} from '../../hooks/use-hotkey';
+import {TerminalEditor} from '../Terminal/TerminalEditor/TerminalEditor';
 import {DynamicTerminal} from '../Terminal/DynamicTerminal/DynamicTerminal';
 import * as styles from './Frame.css';
 import {FrameSkeleton} from './FrameSkeleton';
@@ -48,6 +49,10 @@ export function PreviewFrame(props: VoidProps<PreviewFrameProps>) {
   const editor = getRootEditorStore();
   const assetsStore = getAssetsStore();
   const exportCanvasStore = getExportCanvasStore();
+  const activeEditorStore = getActiveEditorStore();
+
+  const editorMode = createMemo(() => activeEditorStore.editor()?.mode ?? 'code');
+  const terminalOptions = createMemo(() => activeEditorStore.editor()?.terminalOptions);
 
   const filterHotKey = () =>
     editor.state.options.focused ||
@@ -125,9 +130,19 @@ export function PreviewFrame(props: VoidProps<PreviewFrameProps>) {
             alternativeTheme={terminal.alternativeTheme}
             borderType={terminal.borderType}
             themeId={editor.state.options.themeId}
+            editorMode={editorMode()}
+            terminalOptions={terminalOptions()}
           >
             <Show when={getActiveEditorStore().editor()}>
-              <PreviewExportEditor onSetEditorView={setPreviewEditorView} />
+              <Show when={editorMode() === 'code'} fallback={
+                <TerminalEditor
+                  value={activeEditorStore.editor()?.code ?? ''}
+                  options={activeEditorStore.editor()?.terminalOptions}
+                  readOnly={true}
+                />
+              }>
+                <PreviewExportEditor onSetEditorView={setPreviewEditorView} />
+              </Show>
             </Show>
           </DynamicTerminal>
         </div>

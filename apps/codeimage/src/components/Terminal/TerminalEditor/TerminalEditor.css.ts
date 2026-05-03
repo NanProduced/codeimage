@@ -1,5 +1,5 @@
 import {themeVars} from '@codeimage/ui';
-import {createTheme, createVar, style} from '@vanilla-extract/css';
+import {createTheme, createVar, keyframes, style} from '@vanilla-extract/css';
 
 export const [terminalEditorTheme, terminalEditorVars] = createTheme({
   backgroundColor: '#1e1e1e',
@@ -8,6 +8,18 @@ export const [terminalEditorTheme, terminalEditorVars] = createTheme({
   selectionColor: '#264f78',
   lineHeight: '21px',
   fontSize: '14px',
+});
+
+const cursorBlink = keyframes({
+  '0%': {opacity: 1},
+  '50%': {opacity: 0},
+  '100%': {opacity: 0},
+});
+
+const selectionBlink = keyframes({
+  '0%': {opacity: 1},
+  '50%': {opacity: 0.7},
+  '100%': {opacity: 1},
 });
 
 export const terminalEditorWrapper = style([
@@ -38,6 +50,7 @@ export const terminalEditorContent = style({
 export const terminalEditorLine = style({
   display: 'flex',
   minHeight: terminalEditorVars.lineHeight,
+  position: 'relative',
 });
 
 export const terminalEditorPrompt = style({
@@ -79,13 +92,13 @@ export const terminalEditorTextArea = style({
   width: '100%',
   height: '100%',
   opacity: 0,
-  zIndex: 1,
+  zIndex: 2,
   resize: 'none',
   border: 'none',
   outline: 'none',
   backgroundColor: 'transparent',
   color: 'transparent',
-  caretColor: terminalEditorVars.cursorColor,
+  caretColor: 'transparent',
   fontFamily: 'monospace',
   fontSize: terminalEditorVars.fontSize,
   lineHeight: terminalEditorVars.lineHeight,
@@ -98,7 +111,7 @@ export const terminalEditorTextArea = style({
 
 export const terminalEditorDisplay = style({
   position: 'relative',
-  zIndex: 0,
+  zIndex: 1,
 });
 
 export const ansiBold = style({
@@ -135,21 +148,45 @@ export const ansiStrikethrough = style({
 
 export const ansiSpan = style({
   display: 'inline',
+  position: 'relative',
 });
 
 export const terminalCursor = style({
   display: 'inline-block',
-  width: '8px',
-  height: '18px',
+  width: '0.5em',
+  height: '1em',
   backgroundColor: terminalEditorVars.cursorColor,
-  animation: 'terminalCursorBlink 1s step-end infinite',
+  verticalAlign: 'text-top',
+  animation: `${cursorBlink} 1s step-end infinite`,
 });
 
 export const terminalCursorStatic = style({
   display: 'inline-block',
-  width: '8px',
-  height: '18px',
+  width: '0.5em',
+  height: '1em',
   backgroundColor: terminalEditorVars.cursorColor,
+  verticalAlign: 'text-top',
+});
+
+export const terminalCursorLine = style({
+  display: 'inline-block',
+  width: '2px',
+  height: '1em',
+  backgroundColor: terminalEditorVars.cursorColor,
+  verticalAlign: 'text-top',
+  animation: `${cursorBlink} 1s step-end infinite`,
+});
+
+export const terminalCursorLineStatic = style({
+  display: 'inline-block',
+  width: '2px',
+  height: '1em',
+  backgroundColor: terminalEditorVars.cursorColor,
+  verticalAlign: 'text-top',
+});
+
+export const terminalSelection = style({
+  backgroundColor: terminalEditorVars.selectionColor,
 });
 
 export const terminalEditorMinimalPrompt = style({

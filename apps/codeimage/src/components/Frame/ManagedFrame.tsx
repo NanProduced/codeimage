@@ -3,7 +3,7 @@ import {getActiveEditorStore} from '@codeimage/store/editor/activeEditor';
 import {getEditorSyncAdapter} from '@codeimage/store/editor/createEditorSync';
 import {getFrameState} from '@codeimage/store/editor/frame';
 import {getTerminalState} from '@codeimage/store/editor/terminal';
-import {lazy, Show} from 'solid-js';
+import {createMemo, lazy, Show} from 'solid-js';
 import {DynamicTerminal} from '../Terminal/DynamicTerminal/DynamicTerminal';
 import {Frame} from './Frame';
 
@@ -14,6 +14,10 @@ export function ManagedFrame() {
   const terminal = getTerminalState().state;
   const editor = getRootEditorStore();
   const {readOnly} = getEditorSyncAdapter()!;
+  const activeEditorStore = getActiveEditorStore();
+
+  const editorMode = createMemo(() => activeEditorStore.editor()?.mode ?? 'code');
+  const terminalOptions = createMemo(() => activeEditorStore.editor()?.terminalOptions);
 
   return (
     <Frame
@@ -42,6 +46,8 @@ export function ManagedFrame() {
         alternativeTheme={terminal.alternativeTheme}
         borderType={terminal.borderType}
         themeId={editor.state.options.themeId}
+        editorMode={editorMode()}
+        terminalOptions={terminalOptions()}
       >
         <Show when={getActiveEditorStore().editor()}>
           <CanvasEditor readOnly={readOnly()} />

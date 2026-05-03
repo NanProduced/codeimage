@@ -42,7 +42,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
     <Dialog
       size={'lg'}
       {...props}
-      title={'Settings'}
+      title={t('toolbar.settings')}
       open={props.isOpen}
       onOpenChange={props.onOpenChange}
     >

@@ -99,7 +99,12 @@
     },
     "onlyBuiltDependencies": [
       "esbuild",
-      "lightningcss"
+      "lightningcss",
+      "@parcel/watcher",
+      "@prisma/engines",
+      "browser-tabs-lock",
+      "msw",
+      "prisma"
     ]
   },
   "dependencies": {

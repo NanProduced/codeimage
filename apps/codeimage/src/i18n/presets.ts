@@ -181,4 +181,50 @@ export const presets = {
       },
     },
   },
+  zh: {
+    presets: {
+      userPresets: '我的预设',
+      updatePreset: {
+        label: '更新',
+        dialogTitle: '更新预设',
+        dialogMessage: '确认将选中预设更新为当前编辑器状态',
+        old: '旧',
+        new: '新',
+      },
+      share: {
+        label: '分享',
+        confirm: '预设链接已复制到剪贴板',
+      },
+      renamePreset: {
+        label: '重命名',
+        confirmTitle: '重命名预设',
+        confirmMessage: '输入预设的新名称。',
+      },
+      addPreset: {
+        label: '添加预设',
+        confirmTitle: '添加新预设',
+        confirmMessage: '输入您的预设名称',
+      },
+      deletePreset: {
+        label: '删除',
+        confirmTitle: '删除预设',
+        confirmMessage: '此操作不可撤销。',
+      },
+      sync: {
+        label: '保存到您的账户',
+      },
+      openPreset: {
+        label: '显示我的预设',
+      },
+      limit: {
+        user: {
+          label: `您已达到每个用户 ${userLimit} 个预设的上限。`,
+        },
+        guest: {
+          label: `您已达到访客 ${guestLimit} 个预设的上限。`,
+          actionLabel: `以增加限额。`,
+        },
+      },
+    },
+  },
 };

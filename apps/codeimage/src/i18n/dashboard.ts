@@ -158,4 +158,43 @@ export const dashboard = {
       },
     },
   },
+  zh: {
+    dashboard: {
+      myProjects: '我的项目',
+      new: '新建',
+      errorCreatingProject: '发生错误！',
+      projectCreateSuccess: '项目创建成功',
+      projectCloneSuccess: '项目 {{name}} 克隆成功',
+      projectDeleteSuccess: '项目 {{name}} 已删除',
+      projectDeleteError: '无法删除项目 {{name}}',
+      empty: {
+        title: '暂无项目',
+        description: '从零开始创建新项目<br/>并分享您的代码片段',
+      },
+      errorLoadingList: {
+        title: '出了点问题！',
+        description: '抱歉！您的请求遇到了问题。',
+      },
+      noMatchingProjects: {
+        title: '无结果',
+        description: '哎呀！没有与您的搜索<br/>匹配的项目。',
+      },
+      deleteProject: {
+        dropdownLabel: '删除',
+        confirmTitle: '删除项目',
+        confirmMessage: '此操作不可撤销。',
+      },
+      renameProject: {
+        dropdownLabel: '重命名',
+        confirmTitle: '重命名项目',
+        confirmMessage: '输入项目的新名称。',
+      },
+      cloneProject: {
+        dropdownLabel: '克隆',
+        confirmTitle: '克隆项目',
+      },
+      created: '创建时间',
+      updated: '更新时间',
+    },
+  },
 };

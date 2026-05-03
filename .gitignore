@@ -9,3 +9,5 @@ dist
 .idea
 .pnpm-store/
 .DS_STORE
+.claude/
+.playwright-mcp/

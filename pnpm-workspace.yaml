@@ -3,6 +3,28 @@ packages:
   - 'packages/**'
   - 'tools/**'
   - '!**/test/**'
+allowBuilds:
+  ',': true
+  '-': true
+  /: true
+  '@': true
+  a: true
+  b: true
+  c: true
+  e: true
+  g: true
+  h: true
+  i: true
+  k: true
+  l: true
+  m: true
+  n: true
+  o: true
+  p: true
+  r: true
+  s: true
+  t: true
+  w: true
 
 catalogs:
   next:

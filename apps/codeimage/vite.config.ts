@@ -14,7 +14,7 @@ const config: UserConfigExport = defineConfig(({mode}) => ({
     {
       ...mdx({
         jsx: true,
-        jsxImportSource: 'solid-jsx',
+        jsxImportSource: 'solid-js',
         providerImportSource: 'solid-mdx',
         rehypePlugins: [rehypeSlug, [rehypeRaw, {passThrough: nodeTypes}]],
       }),

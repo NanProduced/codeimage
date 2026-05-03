@@ -3,8 +3,8 @@ import {getRootEditorStore} from '@codeimage/store/editor';
 import {getThemeStore} from '@codeimage/store/theme/theme.store';
 import {EditorView} from '@codemirror/view';
 import {createCodeMirror, createEditorReadonly} from 'solid-codemirror';
-import type {Extension} from '@codemirror/state';
-import {EditorState} from '@codemirror/state';
+import type {Extension, RangeSet} from '@codemirror/state';
+import {EditorState, RangeSetBuilder} from '@codemirror/state';
 import {
   autocompletion,
   closeBrackets,
@@ -26,6 +26,9 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
+  Decoration,
+  ViewPlugin,
+  ViewUpdate,
 } from '@codemirror/view';
 import type {Accessor, VoidProps} from 'solid-js';
 import {
@@ -34,13 +37,15 @@ import {
   createResource,
   createSignal,
   on,
+  onCleanup,
   Show,
 } from 'solid-js';
-import clsx from 'clsx';
 import * as styles from './DiffEditor.css';
 import {computeDiffLines, isGitDiffFormat, parseGitDiff} from '../../utils/diffParser';
-import type {DiffLine, DiffLineType, EditorMode} from '@codeimage/store/editor/model';
+import type {DiffLineType} from '@codeimage/store/editor/model';
 import {createTabIcon} from '../../hooks/use-tab-icon';
+
+type DecorationSet = RangeSet<Decoration>;
 
 const EDITOR_BASE_SETUP: Extension = [
   highlightSpecialChars(),
@@ -68,7 +73,122 @@ interface DiffEditorProps {
   onEditorViewChange?: (view: EditorView | undefined) => void;
 }
 
-type DiffTab = 'left' | 'right' | 'diff';
+const addedLineDeco = Decoration.line({class: styles.lineAdded});
+const removedLineDeco = Decoration.line({class: styles.lineRemoved});
+const unchangedLineDeco = Decoration.line({class: styles.lineUnchanged});
+
+function createDiffHighlightPlugin(
+  getDiffLines: () => {type: DiffLineType; isLeft: boolean; lineNumber: number}[],
+): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+
+      constructor(view: EditorView) {
+        this.decorations = this.buildDecorations(view);
+      }
+
+      update(update: ViewUpdate) {
+        if (
+          update.docChanged ||
+          update.viewportChanged ||
+          update.selectionSet
+        ) {
+          this.decorations = this.buildDecorations(update.view);
+        }
+      }
+
+      buildDecorations(view: EditorView): DecorationSet {
+        const builder = new RangeSetBuilder<Decoration>();
+        const diffLines = getDiffLines();
+
+        for (const {from, to} of view.visibleRanges) {
+          for (let pos = from; pos <= to; ) {
+            const line = view.state.doc.lineAt(pos);
+            const lineIndex = line.number - 1;
+
+            const matchingLine = diffLines.find(
+              d => d.lineNumber === lineIndex + 1,
+            );
+
+            if (matchingLine) {
+              let deco = unchangedLineDeco;
+              if (matchingLine.type === 'added' && !matchingLine.isLeft) {
+                deco = addedLineDeco;
+              } else if (
+                matchingLine.type === 'removed' &&
+                matchingLine.isLeft
+              ) {
+                deco = removedLineDeco;
+              }
+              builder.add(line.from, line.from, deco);
+            } else {
+              builder.add(line.from, line.from, unchangedLineDeco);
+            }
+
+            pos = line.to + 1;
+          }
+        }
+
+        return builder.finish();
+      }
+    },
+    {decorations: v => v.decorations},
+  );
+}
+
+function setupScrollSync(
+  leftView: Accessor<EditorView | undefined>,
+  rightView: Accessor<EditorView | undefined>,
+) {
+  let leftScrollListener: EventListener | null = null;
+  let rightScrollListener: EventListener | null = null;
+  let isSyncing = false;
+
+  function syncScroll(
+    source: HTMLElement,
+    target: HTMLElement,
+  ) {
+    if (isSyncing) return;
+    isSyncing = true;
+    try {
+      target.scrollTop = source.scrollTop;
+      target.scrollLeft = source.scrollLeft;
+    } finally {
+      requestAnimationFrame(() => {
+        isSyncing = false;
+      });
+    }
+  }
+
+  createEffect(() => {
+    const left = leftView();
+    const right = rightView();
+
+    if (left && right && left.scrollDOM && right.scrollDOM) {
+      leftScrollListener = () => syncScroll(left.scrollDOM!, right.scrollDOM!);
+      rightScrollListener = () => syncScroll(right.scrollDOM!, left.scrollDOM!);
+
+      left.scrollDOM.addEventListener('scroll', leftScrollListener, {
+        passive: true,
+      });
+      right.scrollDOM.addEventListener('scroll', rightScrollListener, {
+        passive: true,
+      });
+
+      onCleanup(() => {
+        if (left.scrollDOM && leftScrollListener) {
+          left.scrollDOM.removeEventListener('scroll', leftScrollListener);
+        }
+        if (right.scrollDOM && rightScrollListener) {
+          right.scrollDOM.removeEventListener('scroll', rightScrollListener);
+        }
+        leftScrollListener = null;
+        rightScrollListener = null;
+      });
+    }
+  });
+}
 
 export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
   const {themeArray: themes} = getThemeStore();
@@ -79,11 +199,37 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     computed: {selectedFont},
   } = getRootEditorStore();
 
-  const [activeTab, setActiveTab] = createSignal<DiffTab>('diff');
   const [diffInput, setDiffInput] = createSignal('');
   const [showDiffInput, setShowDiffInput] = createSignal(false);
 
   const diffEditorState = createMemo(() => editorState.diffEditor);
+
+  const leftCode = createMemo(() => diffEditorState().leftCode);
+  const rightCode = createMemo(() => diffEditorState().rightCode);
+
+  const diffLines = createMemo(() => {
+    return computeDiffLines(leftCode(), rightCode());
+  });
+
+  const leftDiffLines = createMemo(() => {
+    return diffLines()
+      .filter(line => line.lineNumber.left !== null)
+      .map(line => ({
+        type: line.type,
+        isLeft: true,
+        lineNumber: line.lineNumber.left!,
+      }));
+  });
+
+  const rightDiffLines = createMemo(() => {
+    return diffLines()
+      .filter(line => line.lineNumber.right !== null)
+      .map(line => ({
+        type: line.type,
+        isLeft: false,
+        lineNumber: line.lineNumber.right!,
+      }));
+  });
 
   const selectedLanguage = createMemo(() =>
     languages.find(language => language.id === diffEditorState().languageId),
@@ -141,6 +287,8 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     },
     '.cm-line': {
       padding: '0 2px 0 8px',
+      borderLeftWidth: '3px',
+      borderLeftStyle: 'solid',
     },
     '.cm-cursor': {
       borderLeftWidth: '2px',
@@ -176,7 +324,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     ref: setLeftRef,
     createExtension: createLeftExtension,
   } = createCodeMirror({
-    value: diffEditorState().leftCode,
+    value: leftCode(),
     onValueChange: value => {
       setState('diffEditor', 'leftCode', value);
     },
@@ -187,7 +335,7 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     ref: setRightRef,
     createExtension: createRightExtension,
   } = createCodeMirror({
-    value: diffEditorState().rightCode,
+    value: rightCode(),
     onValueChange: value => {
       setState('diffEditor', 'rightCode', value);
     },
@@ -197,13 +345,12 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     props.onEditorViewChange?.(leftEditorView());
   });
 
-  const diffLines = createMemo(() => {
-    return computeDiffLines(diffEditorState().leftCode, diffEditorState().rightCode);
-  });
+  setupScrollSync(leftEditorView, rightEditorView);
 
   function setupEditorExtensions(
     createExtension: (ext: Extension | (() => Extension)) => (ext: Extension) => void,
     editorView: Accessor<EditorView | undefined>,
+    getDiffLineData: () => {type: DiffLineType; isLeft: boolean; lineNumber: number}[],
   ) {
     createEditorReadonly(editorView, () => props.readOnly);
     createExtension(EditorView.lineWrapping);
@@ -237,10 +384,11 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     });
     createExtension(() => themeConfiguration()?.editorTheme || []);
     createExtension(baseTheme);
+    createExtension(() => createDiffHighlightPlugin(getDiffLineData));
   }
 
-  setupEditorExtensions(createLeftExtension, leftEditorView);
-  setupEditorExtensions(createRightExtension, rightEditorView);
+  setupEditorExtensions(createLeftExtension, leftEditorView, leftDiffLines);
+  setupEditorExtensions(createRightExtension, rightEditorView, rightDiffLines);
 
   const reconfigureLeftSetup = createLeftExtension(EDITOR_BASE_SETUP);
   const reconfigureRightSetup = createRightExtension(EDITOR_BASE_SETUP);
@@ -293,19 +441,6 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
     setDiffInput('');
   };
 
-  const getLineClass = (type: DiffLineType) => {
-    switch (type) {
-      case 'added':
-        return styles.lineAdded;
-      case 'removed':
-        return styles.lineRemoved;
-      case 'modified':
-        return styles.lineModified;
-      default:
-        return styles.lineUnchanged;
-    }
-  };
-
   return (
     <div class={styles.wrapper}>
       <Show when={showDiffInput()}>
@@ -315,7 +450,13 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
           </label>
           <textarea
             class={styles.diffInput}
-            placeholder={`diff --git a/file.txt b/file.txt\n--- a/file.txt\n+++ b/file.txt\n@@ -1,3 +1,3 @@\n-old line\n+new line\n unchanged`}
+            placeholder={`diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1,3 +1,3 @@
+-old line
++new line
+ unchanged`}
             value={diffInput()}
             onInput={e => setDiffInput(e.target.value)}
           />
@@ -329,121 +470,37 @@ export default function DiffEditor(props: VoidProps<DiffEditorProps>) {
         </div>
       </Show>
 
-      <div class={styles.editorHeader}>
-        <div class={styles.modeSelector}>
+      <div class={styles.toolsBar}>
+        <div class={styles.toolsLeft}>
           <button
-            class={clsx(
-              styles.modeButton,
-              activeTab() === 'diff' && styles.modeButtonActive,
-            )}
-            onClick={() => setActiveTab('diff')}
+            class={styles.toolButton}
+            onClick={() => setShowDiffInput(v => !v)}
           >
-            Diff View
-          </button>
-          <button
-            class={clsx(
-              styles.modeButton,
-              activeTab() === 'left' && styles.modeButtonActive,
-            )}
-            onClick={() => setActiveTab('left')}
-          >
-            Original
-          </button>
-          <button
-            class={clsx(
-              styles.modeButton,
-              activeTab() === 'right' && styles.modeButtonActive,
-            )}
-            onClick={() => setActiveTab('right')}
-          >
-            Modified
+            {showDiffInput() ? 'Hide Paste' : 'Paste Diff'}
           </button>
         </div>
-        <button
-          class={styles.parseButton}
-          onClick={() => setShowDiffInput(v => !v)}
-          style={{'margin-top': '0'}}
-        >
-          {showDiffInput() ? 'Hide' : 'Paste Diff'}
-        </button>
+        <div class={styles.toolsRight} />
       </div>
 
-      <Show when={activeTab() === 'diff'}>
-        <div class={styles.wrapper}>
-          <div class={styles.column}>
-            <div class={styles.columnHeader}>Original (Before)</div>
-            <div class={styles.codeContainer}>
-              {diffLines().map((line, index) => (
-                <div
-                  class={clsx(styles.line, getLineClass(line.type))}
-                  style={{
-                    opacity: line.lineNumber.left === null ? 0.3 : 1,
-                  }}
-                >
-                  <div class={styles.lineGutter}>
-                    {line.lineNumber.left ?? ''}
-                  </div>
-                  <div class={styles.lineContent}>
-                    {line.lineNumber.left !== null
-                      ? escapeHtml(line.content)
-                      : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div class={styles.columnDivider} />
-          <div class={styles.column}>
-            <div class={styles.columnHeader}>Modified (After)</div>
-            <div class={styles.codeContainer}>
-              {diffLines().map((line, index) => (
-                <div
-                  class={clsx(styles.line, getLineClass(line.type))}
-                  style={{
-                    opacity: line.lineNumber.right === null ? 0.3 : 1,
-                  }}
-                >
-                  <div class={styles.lineGutter}>
-                    {line.lineNumber.right ?? ''}
-                  </div>
-                  <div class={styles.lineContent}>
-                    {line.lineNumber.right !== null
-                      ? escapeHtml(line.content)
-                      : ''}
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div class={styles.editorContainer}>
+        <div class={styles.column}>
+          <div class={styles.columnHeader}>Original (Before)</div>
+          <div class={styles.editorWrapper}>
+            <code class={`language-${selectedLanguage()?.id ?? 'default'}`}>
+              <div ref={setLeftRef} />
+            </code>
           </div>
         </div>
-      </Show>
-
-      <Show when={activeTab() === 'left'}>
-        <div class={styles.editorWrapper}>
-          <div class={styles.columnHeader}>Original Code</div>
-          <code class={`language-${selectedLanguage()?.id ?? 'default'}`}>
-            <div ref={setLeftRef} />
-          </code>
+        <div class={styles.columnDivider} />
+        <div class={styles.column}>
+          <div class={styles.columnHeader}>Modified (After)</div>
+          <div class={styles.editorWrapper}>
+            <code class={`language-${selectedLanguage()?.id ?? 'default'}`}>
+              <div ref={setRightRef} />
+            </code>
+          </div>
         </div>
-      </Show>
-
-      <Show when={activeTab() === 'right'}>
-        <div class={styles.editorWrapper}>
-          <div class={styles.columnHeader}>Modified Code</div>
-          <code class={`language-${selectedLanguage()?.id ?? 'default'}`}>
-            <div ref={setRightRef} />
-          </code>
-        </div>
-      </Show>
+      </div>
     </div>
   );
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }

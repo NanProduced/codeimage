@@ -12,9 +12,30 @@ import {createSelector} from 'solid-js';
 import type {SetStoreFunction} from 'solid-js/store';
 import {defineStore, provideState} from 'statebuilder';
 import {createCommand, withProxyCommands} from 'statebuilder/commands';
-import type {EditorState, EditorUIOptions, PersistedEditorState} from './model';
+import type {
+  EditorMode,
+  EditorState,
+  EditorUIOptions,
+  PersistedEditorState,
+  TerminalEditorOptions,
+} from './model';
 
 const defaultId = createUniqueId();
+
+export function getDefaultTerminalOptions(): TerminalEditorOptions {
+  return {
+    ansiThemeId: 'default',
+    prompt: {
+      username: 'user',
+      hostname: 'localhost',
+      directory: '~',
+      showPrompt: true,
+      promptStyle: 'default',
+    },
+    showCursor: true,
+    cursorBlink: false,
+  };
+}
 
 export function getInitialEditorState(): EditorState {
   return {
@@ -23,6 +44,8 @@ export function getInitialEditorState(): EditorState {
     languageId: appEnvironment.defaultState.editor.languageId,
     formatter: null,
     lineNumberStart: 1,
+    mode: 'code',
+    terminalOptions: getDefaultTerminalOptions(),
     tab: {
       tabName: 'index.tsx',
       tabIcon: undefined,
@@ -59,6 +82,8 @@ export function createEditorsStore() {
       setFromPersistedState: PersistedEditorState;
       setFromPreset: PresetData['editor'];
       setEnableLigatures: boolean;
+      setEditorMode: {editorId: string; mode: EditorMode};
+      setTerminalOptions: {editorId: string; options: Partial<TerminalEditorOptions>};
     }>(),
   );
 
@@ -93,6 +118,42 @@ export function createEditorsStore() {
     .hold(store.commands.setEnableLigatures, (enable, {set}) =>
       set('options', 'enableLigatures', enable),
     )
+    .hold(store.commands.setEditorMode, ({editorId, mode}, {state}) => {
+      const editorIndex = state.editors.findIndex(e => e.id === editorId);
+      if (editorIndex === -1) return state;
+      return {
+        ...state,
+        editors: state.editors.map((editor, index) => {
+          if (index !== editorIndex) return editor;
+          return {
+            ...editor,
+            mode,
+            terminalOptions: editor.terminalOptions ?? getDefaultTerminalOptions(),
+          };
+        }),
+      };
+    })
+    .hold(store.commands.setTerminalOptions, ({editorId, options}, {state}) => {
+      const editorIndex = state.editors.findIndex(e => e.id === editorId);
+      if (editorIndex === -1) return state;
+      return {
+        ...state,
+        editors: state.editors.map((editor, index) => {
+          if (index !== editorIndex) return editor;
+          return {
+            ...editor,
+            terminalOptions: {
+              ...(editor.terminalOptions ?? getDefaultTerminalOptions()),
+              ...options,
+              prompt: {
+                ...(editor.terminalOptions?.prompt ?? getDefaultTerminalOptions().prompt),
+                ...options.prompt,
+              },
+            },
+          };
+        }),
+      };
+    })
     .hold(store.commands.setFromPreset, presetData => {
       store.set('options', presetData);
       store.dispatch(editorUpdateCommand, void 0);
@@ -106,6 +167,8 @@ export function createEditorsStore() {
           id: editor.id,
           code: editor.code,
           lineNumberStart: editor.lineNumberStart,
+          mode: editor.mode ?? 'code',
+          terminalOptions: editor.terminalOptions ?? getDefaultTerminalOptions(),
         }));
       return {
         options: {...state.options, ...persistedState.options},
@@ -117,6 +180,8 @@ export function createEditorsStore() {
             tab: {tabName: editor.tabName},
             id: editor.id,
             lineNumberStart: editor.lineNumberStart,
+            mode: editor.mode,
+            terminalOptions: editor.terminalOptions,
           };
         }),
       };
@@ -140,6 +205,8 @@ export function createEditorsStore() {
           tabName: editor.tab.tabName ?? '',
           id: editor.id,
           lineNumberStart: editor.lineNumberStart ?? 1,
+          mode: editor.mode,
+          terminalOptions: editor.terminalOptions,
         };
       }),
       options: {
@@ -159,6 +226,8 @@ export function createEditorsStore() {
       store.commands.setFontWeight,
       store.commands.setShowLineNumbers,
       store.commands.setEnableLigatures,
+      store.commands.setEditorMode,
+      store.commands.setTerminalOptions,
       editorUpdateCommand,
     ]),
   ).pipe(
@@ -250,6 +319,8 @@ export function createEditorsStore() {
             id: editor.id,
             code: editor.code,
             lineNumberStart: editor.lineNumberStart ?? 1,
+            mode: (editor as any).mode ?? 'code',
+            terminalOptions: (editor as any).terminalOptions ?? getDefaultTerminalOptions(),
           }) as EditorState,
       ),
     );

@@ -2,6 +2,7 @@ import {SUPPORTED_LANGUAGES} from '@codeimage/config';
 import {getRootEditorStore} from '@codeimage/store/editor';
 import {getActiveEditorStore} from '@codeimage/store/editor/activeEditor';
 import {getThemeStore} from '@codeimage/store/theme/theme.store';
+import type {LineHighlight} from '@codeimage/store/editor/model';
 import {
   autocompletion,
   closeBrackets,
@@ -19,6 +20,7 @@ import type {Extension} from '@codemirror/state';
 import {EditorState} from '@codemirror/state';
 import {
   crosshairCursor,
+  Decoration,
   drawSelection,
   dropCursor,
   EditorView,
@@ -26,11 +28,70 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
+  ViewPlugin,
+  ViewUpdate,
 } from '@codemirror/view';
+import type {DecorationSet} from '@codemirror/view';
 import {createCodeMirror, createEditorReadonly} from 'solid-codemirror';
 import type {VoidProps} from 'solid-js';
 import {createEffect, createMemo, createResource, on} from 'solid-js';
 import {createTabIcon} from '../../hooks/use-tab-icon';
+
+function buildLineDecorations(
+  highlights: LineHighlight[],
+  view: EditorView,
+): DecorationSet {
+  const decorations: {from: number; to: number; value: Decoration}[] = [];
+
+  for (const {from, to, color} of highlights) {
+    for (let lineNum = from; lineNum <= to; lineNum++) {
+      try {
+        const line = view.state.doc.line(lineNum);
+        decorations.push({
+          from: line.from,
+          to: line.to,
+          value: Decoration.line({
+            attributes: {
+              style: `background-color: ${color};`,
+            },
+          }),
+        });
+      } catch {
+        // Line doesn't exist, skip
+      }
+    }
+  }
+
+  return Decoration.set(decorations.sort((a, b) => a.from - b.from));
+}
+
+function dynamicLineHighlighter(getHighlights: () => LineHighlight[]): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      lastHighlights: string;
+
+      constructor(view: EditorView) {
+        const highlights = getHighlights();
+        this.lastHighlights = JSON.stringify(highlights);
+        this.decorations = buildLineDecorations(highlights, view);
+      }
+
+      update(update: ViewUpdate) {
+        const highlights = getHighlights();
+        const highlightsStr = JSON.stringify(highlights);
+
+        if (update.docChanged || update.viewportChanged || highlightsStr !== this.lastHighlights) {
+          this.lastHighlights = highlightsStr;
+          this.decorations = buildLineDecorations(highlights, update.view);
+        }
+      }
+    },
+    {
+      decorations: v => v.decorations,
+    },
+  );
+}
 
 const EDITOR_BASE_SETUP: Extension = [
   highlightSpecialChars(),
@@ -198,6 +259,9 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
   });
   createExtension(() => themeConfiguration()?.editorTheme || []);
   createExtension(baseTheme);
+
+  const highlightedLines = createMemo(() => editor()?.highlightedLines ?? []);
+  createExtension(() => dynamicLineHighlighter(highlightedLines));
 
   const reconfigureBaseSetup = createExtension(EDITOR_BASE_SETUP);
 

@@ -23,6 +23,7 @@ export function getInitialEditorState(): EditorState {
     languageId: appEnvironment.defaultState.editor.languageId,
     formatter: null,
     lineNumberStart: 1,
+    highlightedLines: [],
     tab: {
       tabName: 'index.tsx',
       tabIcon: undefined,
@@ -106,6 +107,7 @@ export function createEditorsStore() {
           id: editor.id,
           code: editor.code,
           lineNumberStart: editor.lineNumberStart,
+          highlightedLines: editor.highlightedLines ?? [],
         }));
       return {
         options: {...state.options, ...persistedState.options},
@@ -117,6 +119,7 @@ export function createEditorsStore() {
             tab: {tabName: editor.tabName},
             id: editor.id,
             lineNumberStart: editor.lineNumberStart,
+            highlightedLines: editor.highlightedLines ?? [],
           };
         }),
       };
@@ -140,6 +143,7 @@ export function createEditorsStore() {
           tabName: editor.tab.tabName ?? '',
           id: editor.id,
           lineNumberStart: editor.lineNumberStart ?? 1,
+          highlightedLines: editor.highlightedLines ?? [],
         };
       }),
       options: {
@@ -250,6 +254,8 @@ export function createEditorsStore() {
             id: editor.id,
             code: editor.code,
             lineNumberStart: editor.lineNumberStart ?? 1,
+            // @ts-expect-error - highlightedLines may not exist in API type yet
+            highlightedLines: editor.highlightedLines ?? [],
           }) as EditorState,
       ),
     );

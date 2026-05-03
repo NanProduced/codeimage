@@ -209,3 +209,36 @@ export const watermark = style({
   right: '32px',
   bottom: '24px',
 });
+
+export const userWatermark = style({
+  position: 'absolute',
+  bottom: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  zIndex: 1,
+});
+
+export const userWatermarkLeft = style({
+  left: '32px',
+});
+
+export const userWatermarkCenter = style({
+  left: '50%',
+  transform: 'translateX(-50%)',
+});
+
+export const userWatermarkRight = style({
+  right: '160px',
+});
+
+export const userWatermarkAvatar = style({
+  borderRadius: '50%',
+  objectFit: 'cover',
+  flexShrink: 0,
+});
+
+export const userWatermarkText = style({
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+});

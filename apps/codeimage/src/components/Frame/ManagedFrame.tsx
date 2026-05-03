@@ -6,6 +6,7 @@ import {getTerminalState} from '@codeimage/store/editor/terminal';
 import {lazy, Show} from 'solid-js';
 import {DynamicTerminal} from '../Terminal/DynamicTerminal/DynamicTerminal';
 import {Frame} from './Frame';
+import {UserWatermark} from './UserWatermark';
 
 const CanvasEditor = lazy(() => import('../CustomEditor/CanvasEditor'));
 
@@ -38,7 +39,6 @@ export function ManagedFrame() {
         showHeader={terminal.showHeader}
         showGlassReflection={terminal.showGlassReflection}
         showWatermark={terminal.showWatermark}
-        userWatermark={terminal.userWatermark}
         opacity={terminal.opacity}
         alternativeTheme={terminal.alternativeTheme}
         borderType={terminal.borderType}
@@ -48,6 +48,11 @@ export function ManagedFrame() {
           <CanvasEditor readOnly={readOnly()} />
         </Show>
       </DynamicTerminal>
+      <UserWatermark
+        userWatermark={terminal.userWatermark}
+        textColor={terminal.textColor}
+        preview={false}
+      />
     </Frame>
   );
 }

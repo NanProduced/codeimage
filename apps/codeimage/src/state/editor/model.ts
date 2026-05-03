@@ -1,5 +1,47 @@
 import type {PersistedFrameState} from '@codeimage/store/frame/model';
 
+export type EditorMode = 'code' | 'terminal';
+
+export interface AnsiColorPalette {
+  black: string;
+  red: string;
+  green: string;
+  yellow: string;
+  blue: string;
+  magenta: string;
+  cyan: string;
+  white: string;
+  brightBlack: string;
+  brightRed: string;
+  brightGreen: string;
+  brightYellow: string;
+  brightBlue: string;
+  brightMagenta: string;
+  brightCyan: string;
+  brightWhite: string;
+  foreground: string;
+  background: string;
+  cursor: string;
+  cursorText: string;
+  selection: string;
+  selectionText: string;
+}
+
+export interface TerminalPromptConfig {
+  username: string;
+  hostname: string;
+  directory: string;
+  showPrompt: boolean;
+  promptStyle: 'default' | 'minimal' | 'full';
+}
+
+export interface TerminalEditorOptions {
+  ansiThemeId: string;
+  prompt: TerminalPromptConfig;
+  showCursor: boolean;
+  cursorBlink: boolean;
+}
+
 export interface EditorUIOptions {
   fontId: string;
   fontWeight: number;
@@ -20,6 +62,8 @@ export interface EditorState {
   formatter?: string | null;
   languageId: string;
   lineNumberStart: number;
+  mode: EditorMode;
+  terminalOptions?: TerminalEditorOptions;
 }
 
 export interface EditorUIOptions {
@@ -39,6 +83,8 @@ export interface PersistedEditorState {
     tabName: string;
     languageId: string;
     lineNumberStart: number;
+    mode: EditorMode;
+    terminalOptions?: TerminalEditorOptions;
   }[];
 }
 

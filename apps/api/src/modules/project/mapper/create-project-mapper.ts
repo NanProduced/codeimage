@@ -64,6 +64,7 @@ export function createProjectRequestMapper(
       code: editor.code,
       tabName: editor.tabName,
       lineNumberStart: editor.lineNumberStart,
+      highlightedLines: editor.highlightedLines ?? [],
     })),
   };
 }

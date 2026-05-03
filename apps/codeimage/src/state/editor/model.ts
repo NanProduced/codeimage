@@ -42,6 +42,17 @@ export interface PersistedEditorState {
   }[];
 }
 
+export interface UserWatermarkConfig {
+  enabled: boolean;
+  text: string;
+  avatarUrl: string;
+  position: 'left' | 'center' | 'right';
+  fontSize: number;
+  color: string;
+  opacity: number;
+  showOnlyOnExport: boolean;
+}
+
 export interface TerminalState {
   showHeader: boolean;
   type: string;
@@ -55,6 +66,7 @@ export interface TerminalState {
   alternativeTheme: boolean;
   // eslint-disable-next-line @typescript-eslint/ban-types
   borderType: ('glass' | (string & {})) | null;
+  userWatermark: UserWatermarkConfig;
 }
 
 export type PersistedTerminalState = Pick<
@@ -70,6 +82,7 @@ export type PersistedTerminalState = Pick<
   | 'opacity'
   | 'alternativeTheme'
   | 'borderType'
+  | 'userWatermark'
 >;
 
 export interface ProjectEditorPersistedState {

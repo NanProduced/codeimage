@@ -20,15 +20,23 @@ export function getInitialTerminalState(): TerminalState {
     type: terminalName,
     shadow: TERMINAL_SHADOWS.bottom,
     accentVisible: true,
-    // lazy initialization
     background: '',
-    // lazy initialization
     textColor: '',
     showWatermark: true,
     showGlassReflection: false,
     borderType: 'glass',
     opacity: 100,
     alternativeTheme: false,
+    userWatermark: {
+      enabled: false,
+      text: '',
+      avatarUrl: '',
+      position: 'right',
+      fontSize: 12,
+      color: '',
+      opacity: 60,
+      showOnlyOnExport: false,
+    },
   };
 }
 
@@ -47,8 +55,8 @@ export function createTerminalState() {
       toggleWatermark: void;
       setFromPersistedState: PersistedTerminalState;
       setFromPreset: PresetData['terminal'];
-      // eslint-disable-next-line @typescript-eslint/ban-types
       setBorder: ('glass' | (string & {})) | null;
+      setUserWatermark: Partial<TerminalState['userWatermark']>;
     }>(),
   );
   const store = provideAppState(config);
@@ -90,18 +98,36 @@ export function createTerminalState() {
       showWatermark: !state.showWatermark,
     }))
     .hold(store.commands.setFromPreset, presetData => {
-      store.set(state => ({...state, ...presetData}));
+      store.set(state => ({
+        ...state,
+        ...presetData,
+        userWatermark: presetData.userWatermark ?? state.userWatermark,
+      }));
     })
     .hold(store.commands.setFromPersistedState, (persistedState, {state}) => {
       const shadows = TERMINAL_SHADOWS;
       if (!Object.values<string | null>(shadows).includes(state.shadow)) {
         state.shadow = shadows.bottom;
       }
-      return {...state, ...persistedState};
+      return {
+        ...state,
+        ...persistedState,
+        userWatermark: persistedState.userWatermark ?? state.userWatermark,
+      };
     })
     .hold(store.commands.setBorder, (value, {set}) => {
       set('borderType', value);
-    });
+    })
+    .hold(
+      store.commands.setUserWatermark,
+      (userWatermark, {state}) => ({
+        ...state,
+        userWatermark: {
+          ...state.userWatermark,
+          ...userWatermark,
+        },
+      }),
+    );
 
   const mapToStateToPersistState = (
     state: TerminalState,
@@ -118,6 +144,7 @@ export function createTerminalState() {
       type: state.type,
       accentVisible: state.accentVisible,
       borderType: state.borderType,
+      userWatermark: state.userWatermark,
     };
   };
 
@@ -135,6 +162,7 @@ export function createTerminalState() {
       store.commands.toggleWatermark,
       store.commands.setBorder,
       store.commands.setFromPreset,
+      store.commands.setUserWatermark,
     ]),
   ).pipe(
     map(() => store()),

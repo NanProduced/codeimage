@@ -42,6 +42,18 @@ export function PresetPreview(props: PresetPreviewProps) {
         borderType={props.data.terminal.borderType}
         showGlassReflection={props.data.terminal.showGlassReflection}
         showWatermark={false}
+        userWatermark={
+          props.data.terminal.userWatermark ?? {
+            enabled: false,
+            text: '',
+            avatarUrl: '',
+            position: 'right',
+            fontSize: 12,
+            color: '',
+            opacity: 60,
+            showOnlyOnExport: false,
+          }
+        }
         opacity={props.data.terminal.opacity}
         alternativeTheme={props.data.terminal.alternativeTheme}
         themeId={props.data.editor.themeId}

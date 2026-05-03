@@ -38,6 +38,7 @@ export function ManagedFrame() {
         showHeader={terminal.showHeader}
         showGlassReflection={terminal.showGlassReflection}
         showWatermark={terminal.showWatermark}
+        userWatermark={terminal.userWatermark}
         opacity={terminal.opacity}
         alternativeTheme={terminal.alternativeTheme}
         borderType={terminal.borderType}

@@ -18,6 +18,7 @@ import {useHotkey} from '../../hooks/use-hotkey';
 import {DynamicTerminal} from '../Terminal/DynamicTerminal/DynamicTerminal';
 import * as styles from './Frame.css';
 import {FrameSkeleton} from './FrameSkeleton';
+import {UserWatermark} from './UserWatermark';
 
 interface PreviewFrameProps {
   ref: Ref<HTMLDivElement>;
@@ -121,7 +122,6 @@ export function PreviewFrame(props: VoidProps<PreviewFrameProps>) {
             showHeader={terminal.showHeader}
             showGlassReflection={terminal.showGlassReflection}
             showWatermark={terminal.showWatermark}
-            userWatermark={terminal.userWatermark}
             opacity={terminal.opacity}
             alternativeTheme={terminal.alternativeTheme}
             borderType={terminal.borderType}
@@ -132,6 +132,11 @@ export function PreviewFrame(props: VoidProps<PreviewFrameProps>) {
               <PreviewExportEditor onSetEditorView={setPreviewEditorView} />
             </Show>
           </DynamicTerminal>
+          <UserWatermark
+            userWatermark={terminal.userWatermark}
+            textColor={terminal.textColor}
+            preview={true}
+          />
         </div>
       </div>
     </PreviewPortal>

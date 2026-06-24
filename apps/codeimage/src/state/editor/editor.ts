@@ -27,6 +27,7 @@ export function getInitialEditorState(): EditorState {
       tabName: 'index.tsx',
       tabIcon: undefined,
     },
+    highlightLines: [],
   };
 }
 
@@ -106,6 +107,7 @@ export function createEditorsStore() {
           id: editor.id,
           code: editor.code,
           lineNumberStart: editor.lineNumberStart,
+          highlightLines: editor.highlightLines ?? [],
         }));
       return {
         options: {...state.options, ...persistedState.options},
@@ -117,6 +119,7 @@ export function createEditorsStore() {
             tab: {tabName: editor.tabName},
             id: editor.id,
             lineNumberStart: editor.lineNumberStart,
+            highlightLines: editor.highlightLines ?? [],
           };
         }),
       };
@@ -140,6 +143,7 @@ export function createEditorsStore() {
           tabName: editor.tab.tabName ?? '',
           id: editor.id,
           lineNumberStart: editor.lineNumberStart ?? 1,
+          highlightLines: editor.highlightLines ?? [],
         };
       }),
       options: {

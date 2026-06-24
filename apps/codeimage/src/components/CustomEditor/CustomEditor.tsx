@@ -1,4 +1,9 @@
 import {SUPPORTED_LANGUAGES} from '@codeimage/config';
+import {
+  highlightLines,
+  setHighlightLines,
+  type HighlightLineSpec,
+} from '@codeimage/highlight';
 import {getRootEditorStore} from '@codeimage/store/editor';
 import {getActiveEditorStore} from '@codeimage/store/editor/activeEditor';
 import {getThemeStore} from '@codeimage/store/theme/theme.store';
@@ -198,6 +203,7 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
   });
   createExtension(() => themeConfiguration()?.editorTheme || []);
   createExtension(baseTheme);
+  createExtension(highlightLines());
 
   const reconfigureBaseSetup = createExtension(EDITOR_BASE_SETUP);
 
@@ -207,6 +213,25 @@ export default function CustomEditor(props: VoidProps<CustomEditorProps>) {
       readOnly => {
         const extension = readOnly ? [] : EDITOR_BASE_SETUP;
         reconfigureBaseSetup(extension);
+      },
+    ),
+  );
+
+  createEffect(
+    on(
+      () => editor()?.highlightLines,
+      highlightLinesData => {
+        const view = editorView();
+        if (!view || !highlightLinesData) return;
+
+        const lineNumberOffset = (editor()?.lineNumberStart ?? 1) - 1;
+        const specs: HighlightLineSpec[] = highlightLinesData.map(line => ({
+          startLine: line.startLine - lineNumberOffset,
+          endLine: line.endLine - lineNumberOffset,
+          color: line.color,
+        }));
+
+        setHighlightLines(view, specs);
       },
     ),
   );

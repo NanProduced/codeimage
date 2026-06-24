@@ -13,6 +13,13 @@ export interface TabState {
   tabIcon?: string;
 }
 
+export interface HighlightLine {
+  id: string;
+  startLine: number;
+  endLine: number;
+  color: string;
+}
+
 export interface EditorState {
   id: string;
   code: string;
@@ -20,6 +27,7 @@ export interface EditorState {
   formatter?: string | null;
   languageId: string;
   lineNumberStart: number;
+  highlightLines: HighlightLine[];
 }
 
 export interface EditorUIOptions {
@@ -39,6 +47,7 @@ export interface PersistedEditorState {
     tabName: string;
     languageId: string;
     lineNumberStart: number;
+    highlightLines: HighlightLine[];
   }[];
 }
 
